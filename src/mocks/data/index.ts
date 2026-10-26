@@ -4,3 +4,4 @@ export * from './mockWishlist';
 export * from './mockUserProfile';
 export * from './mockPreferences';
 export * from './mockMapPins';
+export * from './mockNotifications';

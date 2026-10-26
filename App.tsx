@@ -24,6 +24,7 @@ import { EditJournalScreen } from "./src/screens/EditJournalScreen";
 import { EditProfileScreen } from "./src/screens/EditProfileScreen";
 import { AIRecommendationsScreen } from "./src/screens/AIRecommendationsScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
+import { NotificationsScreen } from "./src/screens/NotificationsScreen";
 import { SplashScreen } from "./src/screens/SplashScreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { AuthModal } from "./src/screens/AuthModal";
@@ -31,6 +32,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserLocation, NearbyPlace } from "./src/types/places";
 import { DiaryEntry } from "./src/types/diary";
 import { LocationService } from "./src/services/places/locationService";
+import { placesService } from "./src/services/places/placesService";
+import { journalRepository } from "./src/repositories";
 import {
   AuthService,
   UserProfile,
@@ -66,6 +69,7 @@ export default function App() {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isAIRecommendationsOpen, setIsAIRecommendationsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<
     boolean | null
@@ -188,7 +192,7 @@ export default function App() {
         <Header
           userAvatar={currentUser.photoURL}
           onProfilePress={() => setActiveTab("profile")}
-          onNotificationPress={() => {}}
+          onNotificationPress={() => setIsNotificationsOpen(true)}
           onAIPress={() => setIsAIRecommendationsOpen(true)}
         />
 
@@ -462,6 +466,57 @@ export default function App() {
               }}
               onOpenItinerary={(_id) => {
                 setIsAIRecommendationsOpen(false);
+                setActiveTab("explore");
+              }}
+            />
+          </SafeAreaView>
+        </Modal>
+
+        {/* Modal Notifikasi */}
+        <Modal
+          visible={isNotificationsOpen}
+          animationType="slide"
+          presentationStyle="fullScreen"
+          onRequestClose={() => setIsNotificationsOpen(false)}
+        >
+          <SafeAreaView
+            style={styles.modalSafeArea}
+            edges={["top", "left", "right"]}
+          >
+            <NotificationsScreen
+              onBack={() => setIsNotificationsOpen(false)}
+              onOpenJournal={async (journalId) => {
+                setIsNotificationsOpen(false);
+                try {
+                  const j = await journalRepository.getJournalById(
+                    currentUser.uid,
+                    journalId
+                  );
+                  if (j) {
+                    const entry: DiaryEntry = {
+                      ...j,
+                      userName: j.userName || currentUser.displayName,
+                      isPublic: false,
+                    };
+                    setSelectedJournalForDetail(entry);
+                    return;
+                  }
+                } catch {
+                  // Fallback to diary tab
+                }
+                setActiveTab("diary");
+              }}
+              onOpenPlace={async (placeId) => {
+                setIsNotificationsOpen(false);
+                try {
+                  const found = await placesService.getPlaceDetails(placeId);
+                  if (found) {
+                    setSelectedPlaceForDetail(found);
+                    return;
+                  }
+                } catch {
+                  // Fallback to explore tab
+                }
                 setActiveTab("explore");
               }}
             />

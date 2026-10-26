@@ -9,6 +9,7 @@ interface HeaderProps {
   onNotificationPress?: () => void;
   onProfilePress?: () => void;
   onAIPress?: () => void;
+  hasUnreadNotifications?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,6 +17,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNotificationPress,
   onProfilePress,
   onAIPress,
+  hasUnreadNotifications = true,
 }) => {
   return (
     <View style={styles.container}>
@@ -40,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
           activeOpacity={0.7}
         >
           <Bell size={19} color={theme.colors.coffeeBrown} strokeWidth={2.2} />
-          <View style={styles.bellDot} />
+          {hasUnreadNotifications && <View style={styles.bellDot} />}
         </TouchableOpacity>
 
         <TouchableOpacity

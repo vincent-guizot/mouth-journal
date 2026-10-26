@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // 1. User Profile Document: /users/{userId}
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.email is string
+        && request.resource.data.displayName is string;
+      allow delete: if isOwner(userId);
+
+      // 2. Private Journals Subcollection: /users/{userId}/journals/{journalId}
+      match /journals/{journalId} {
+        allow read: if isOwner(userId);
+        
+        allow create: if isOwner(userId)
+          && request.resource.data.userId == userId
+          && request.resource.data.placeName is string
+          && request.resource.data.placeName.size() > 0
+          && request.resource.data.mainCategory in ['food', 'drinks', 'wisata']
+          && request.resource.data.overallRating is number
+          && request.resource.data.overallRating >= 0
+          && request.resource.data.overallRating <= 5
+          && request.resource.data.createdAt is string;
+
+        allow update: if isOwner(userId)
+          && request.resource.data.userId == userId
+          && request.resource.data.overallRating is number
+          && request.resource.data.overallRating >= 0
+          && request.resource.data.overallRating <= 5;
+
+        allow delete: if isOwner(userId);
+      }
+
+      // 3. Private Wishlist Subcollection: /users/{userId}/wishlist/{itemId}
+      match /wishlist/{itemId} {
+        allow read: if isOwner(userId);
+        
+        allow create: if isOwner(userId)
+          && request.resource.data.userId == userId
+          && request.resource.data.placeName is string
+          && request.resource.data.placeName.size() > 0
+          && request.resource.data.mainCategory in ['food', 'drinks', 'wisata'];
+
+        allow update: if isOwner(userId)
+          && request.resource.data.userId == userId;
+
+        allow delete: if isOwner(userId);
+      }
+
+      // 4. Private User Preferences: /users/{userId}/preferences/{docId}
+      match /preferences/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Blokir seluruh akses ke root collection atau path lain yang tidak terdefinisi
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

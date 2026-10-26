@@ -81,6 +81,10 @@ export default function RootLayout() {
             name="recommendations/index"
             options={{ presentation: 'modal' }}
           />
+          <Stack.Screen
+            name="notifications/index"
+            options={{ presentation: 'card' }}
+          />
         </Stack>
       </AuthProvider>
     </SafeAreaProvider>

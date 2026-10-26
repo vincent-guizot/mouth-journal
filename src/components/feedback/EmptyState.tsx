@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { Sparkles } from 'lucide-react-native';
 import { theme } from '../../config/theme';
+import { IllustratedState } from './IllustratedState';
 
 export interface EmptyStateProps {
   title?: string;
@@ -17,37 +18,19 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   action,
 }) => {
   return (
-    <View style={styles.container}>
-      {icon || <Sparkles size={36} color={theme.colors.terracotta} />}
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.subtitle}>{subtitle}</Text>
-      {action && <View style={styles.actionWrap}>{action}</View>}
-    </View>
+    <IllustratedState
+      tone="neutral"
+      icon={icon || <Sparkles size={34} color={theme.colors.terracotta} />}
+      title={title}
+      subtitle={subtitle}
+      action={action}
+      style={styles.fillFlex}
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  fillFlex: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#3D2C1E',
-    marginTop: 12,
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#8A7A6D',
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  actionWrap: {
-    marginTop: 16,
   },
 });

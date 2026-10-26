@@ -31,15 +31,25 @@ try {
   console.error('[patch-rn-polyfills] Error creating rn-get-polyfills.js:', err);
 }
 
-// 2. Ensure package.json exports contains ./rn-get-polyfills
+// 2. Ensure package.json exports contains ./rn-get-polyfills and ./rn-get-polyfills.js
 try {
   if (fs.existsSync(rnPackageJsonPath)) {
     const pkg = JSON.parse(fs.readFileSync(rnPackageJsonPath, 'utf8'));
     pkg.exports = pkg.exports || {};
+    let modified = false;
+
     if (!pkg.exports['./rn-get-polyfills']) {
       pkg.exports['./rn-get-polyfills'] = './rn-get-polyfills.js';
+      modified = true;
+    }
+    if (!pkg.exports['./rn-get-polyfills.js']) {
+      pkg.exports['./rn-get-polyfills.js'] = './rn-get-polyfills.js';
+      modified = true;
+    }
+
+    if (modified) {
       fs.writeFileSync(rnPackageJsonPath, JSON.stringify(pkg, null, 2), 'utf8');
-      console.log('[patch-rn-polyfills] Successfully added ./rn-get-polyfills to react-native/package.json exports');
+      console.log('[patch-rn-polyfills] Successfully updated react-native/package.json exports');
     } else {
       console.log('[patch-rn-polyfills] ./rn-get-polyfills already exists in react-native/package.json exports');
     }

@@ -8,6 +8,9 @@ import { WishlistTabs } from '../features/wishlist/components/WishlistTabs';
 import { WishlistSearchBar } from '../features/wishlist/components/WishlistSearchBar';
 import { WishlistPlaceCard } from '../features/wishlist/components/WishlistPlaceCard';
 import { WishlistMenuCard } from '../features/wishlist/components/WishlistMenuCard';
+import { EmptyState } from '../components/feedback/EmptyState';
+import { Heart } from 'lucide-react-native';
+import { theme } from '../config/theme';
 
 export interface WishlistScreenProps {
   userId: string;
@@ -74,18 +77,32 @@ export const WishlistScreen: React.FC<WishlistScreenProps> = ({
 
       {/* 4. List Content */}
       {activeTab === 'tempat' ? (
-        <FlatList
-          data={filteredPlaces}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => (
-            <WishlistPlaceCard
-              item={item}
-              onPress={() => handleCardPress(item)}
-              onToggleHeart={() => handleToggleHeart(item)}
-            />
-          )}
+        filteredPlaces.length === 0 ? (
+          <EmptyState
+            icon={<Heart size={34} color={theme.colors.terracotta} />}
+            title="Wishlist Masih Kosong"
+            subtitle="Simpan tempat yang ingin kamu coba nanti."
+          />
+        ) : (
+          <FlatList
+            data={filteredPlaces}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item }) => (
+              <WishlistPlaceCard
+                item={item}
+                onPress={() => handleCardPress(item)}
+                onToggleHeart={() => handleToggleHeart(item)}
+              />
+            )}
+          />
+        )
+      ) : filteredMenus.length === 0 ? (
+        <EmptyState
+          icon={<Heart size={34} color={theme.colors.terracotta} />}
+          title="Wishlist Menu Masih Kosong"
+          subtitle="Simpan menu yang ingin kamu coba nanti."
         />
       ) : (
         <FlatList

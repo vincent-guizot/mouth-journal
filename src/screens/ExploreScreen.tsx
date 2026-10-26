@@ -18,6 +18,8 @@ import { ExploreHeader } from '../features/explore/components/ExploreHeader';
 import { ExploreSearchBar } from '../features/explore/components/ExploreSearchBar';
 import { ExploreCategoryPills } from '../features/explore/components/ExploreCategoryPills';
 import { ExplorePinPopup } from '../features/explore/components/ExplorePinPopup';
+import { EmptyState } from '../components/feedback/EmptyState';
+import { MapPin, SearchX } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -186,6 +188,20 @@ export const ExploreScreen: React.FC<ExploreScreenProps> = ({
               <ActivityIndicator size="large" color={theme.colors.terracotta} />
               <Text style={styles.loadingText}>Memuat rekomendasi tempat...</Text>
             </View>
+          ) : places.length === 0 ? (
+            searchQuery.trim().length > 0 ? (
+              <EmptyState
+                icon={<SearchX size={34} color={theme.colors.terracotta} />}
+                title="Tidak Ada Hasil"
+                subtitle="Coba kata kunci lain yang lebih spesifik."
+              />
+            ) : (
+              <EmptyState
+                icon={<MapPin size={34} color={theme.colors.terracotta} />}
+                title="Belum Ada Tempat"
+                subtitle="Jelajahi peta untuk menemukan tempat makan baru!"
+              />
+            )
           ) : (
             <FlatList
               data={places}

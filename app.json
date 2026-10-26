@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "MouthJournal",
+    "slug": "mouth-journal",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mouthjournal.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "MouthJournal membutuhkan akses lokasi untuk menampilkan kafe dan tempat makan di sekitar Anda.",
+        "NSCameraUsageDescription": "MouthJournal membutuhkan akses kamera untuk mengambil foto makanan dan minuman.",
+        "NSPhotoLibraryUsageDescription": "MouthJournal membutuhkan akses galeri untuk memilih foto kuliner yang ingin Anda catat."
+      }
+    },
+    "android": {
+      "package": "com.mouthjournal.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#F8EAD9",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Izinkan MouthJournal mengakses lokasi untuk mencari kafe di sekitar Anda."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Izinkan MouthJournal mengakses galeri foto makanan Anda.",
+          "cameraPermission": "Izinkan MouthJournal menggunakan kamera untuk memotret makanan."
+        }
+      ],
+      "expo-font",
+      "expo-router"
+    ]
+  }
+}

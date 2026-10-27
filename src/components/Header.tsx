@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     height: 46,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   logoImage: { width: 42, height: 42 },
   brandText: { marginLeft: 7, justifyContent: 'center' },

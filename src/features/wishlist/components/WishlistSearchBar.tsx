@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { Search, SlidersHorizontal, ArrowUpDown, ChevronDown } from 'lucide-react-native';
+import { Search, ArrowUpDown, ChevronDown } from 'lucide-react-native';
 import { theme } from '../../../config/theme';
 
 interface WishlistSearchBarProps {
@@ -13,7 +13,6 @@ interface WishlistSearchBarProps {
 export const WishlistSearchBar: React.FC<WishlistSearchBarProps> = ({
   searchQuery,
   onSearchChange,
-  onFilterPress,
   onSortPress,
 }) => {
   return (
@@ -28,14 +27,6 @@ export const WishlistSearchBar: React.FC<WishlistSearchBarProps> = ({
           onChangeText={onSearchChange}
         />
       </View>
-
-      <TouchableOpacity
-        style={styles.iconButton}
-        activeOpacity={0.8}
-        onPress={onFilterPress}
-      >
-        <SlidersHorizontal size={17} color="#4E2E21" strokeWidth={2.2} />
-      </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.sortButton}

@@ -36,13 +36,9 @@ export function useJournalForm({
   userName,
   onSuccess,
 }: UseJournalFormProps) {
-  // Photos
+  // Photos: Kosong jika membuat jurnal baru, isi data lama jika mode edit
   const [photos, setPhotos] = useState<string[]>(
-    initialJournal?.photoUrls ||
-      (initialPlace?.photoUrl ? [initialPlace.photoUrl] : [
-        'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=500&auto=format&fit=crop&q=80',
-        'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=500&auto=format&fit=crop&q=80',
-      ])
+    initialJournal?.photoUrls || (initialPlace?.photoUrl ? [initialPlace.photoUrl] : [])
   );
 
   // Selected Place
@@ -60,7 +56,17 @@ export function useJournalForm({
             subCategory: initialJournal.subCategory,
             subCategoryLabel: initialJournal.subCategoryLabel,
           }
-        : DEFAULT_DEMO_PLACE)
+        : {
+            id: '',
+            name: '',
+            address: '',
+            latitude: 0,
+            longitude: 0,
+            mainCategory: 'drinks',
+            mainCategoryLabel: 'Drinks',
+            subCategory: 'cafe',
+            subCategoryLabel: 'Kopi/Cafe',
+          })
   );
 
   // Visit date
@@ -80,44 +86,28 @@ export function useJournalForm({
     initialJournal?.subCategory || 'kopi'
   );
 
-  // Menu items
+  // Menu items: Kosong jika jurnal baru
   const [menuItems, setMenuItems] = useState<MenuItemRow[]>(
     initialJournal?.menuItems.map((m) => ({
       id: m.id,
       name: m.name,
       price: m.price,
       rating: m.rating || 5,
-      image: m.photoUrl || 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=200&auto=format&fit=crop&q=80',
-    })) || [
-      {
-        id: 'm-1',
-        name: 'Latte',
-        price: 45000,
-        rating: 5,
-        image: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=200&auto=format&fit=crop&q=80',
-      },
-      {
-        id: 'm-2',
-        name: 'Croissant',
-        price: 38000,
-        rating: 4,
-        image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=200&auto=format&fit=crop&q=80',
-      },
-    ]
+      image: m.photoUrl || '',
+    })) || []
   );
 
-  // Experience Ratings
+  // Experience Ratings: 0 jika jurnal baru, pakai nilai tersimpan jika mode edit
   const [experienceRatings, setExperienceRatings] = useState<ExperienceRatings>({
-    rasa: initialJournal?.criteriaRating.taste || 5,
-    suasana: initialJournal?.criteriaRating.ambiance || 4,
-    pelayanan: initialJournal?.criteriaRating.service || 4,
-    value: initialJournal?.criteriaRating.price || 4,
+    rasa: initialJournal?.criteriaRating.taste || 0,
+    suasana: initialJournal?.criteriaRating.ambiance || 0,
+    pelayanan: initialJournal?.criteriaRating.service || 0,
+    value: initialJournal?.criteriaRating.price || 0,
   });
 
-  // Review Note
+  // Review Note: Kosong jika jurnal baru
   const [reviewNote, setReviewNote] = useState<string>(
-    initialJournal?.reviewText ||
-      'Tempat yang sangat nyaman untuk kerja atau sekadar ngobrol santai. Kopi arabika lokalnya berkarakter tebal dengan aftertaste manis floral. Croissant renyah bermentega gurih.'
+    initialJournal?.reviewText || ''
   );
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);

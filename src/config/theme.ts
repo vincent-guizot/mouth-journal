@@ -42,8 +42,13 @@ export const theme = {
   fonts: {
     handwriting: 'Caveat_600SemiBold',
     handwritingBold: 'Caveat_700Bold',
-    serifBold: 'PlayfairDisplay_700Bold',
-    serifMedium: 'PlayfairDisplay_600SemiBold',
+    serifBold: 'Manrope_700Bold',
+    serifMedium: 'Manrope_600SemiBold',
+    regular: 'Manrope_400Regular',
+    medium: 'Manrope_500Medium',
+    semiBold: 'Manrope_600SemiBold',
+    bold: 'Manrope_700Bold',
+    extraBold: 'Manrope_800ExtraBold',
   },
   spacing: {
     xs: 4,

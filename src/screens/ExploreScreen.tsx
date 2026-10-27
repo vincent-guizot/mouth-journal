@@ -83,17 +83,16 @@ export const ExploreScreen: React.FC<ExploreScreenProps> = ({
         onToggleViewMode={setViewMode}
       />
 
-      {/* 2. Search Bar */}
-      <ExploreSearchBar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onFilterPress={() => setSelectedCategory(selectedCategory === 'all' ? 'drinks' : 'all')}
-      />
-
-      {/* 3. Category Filter Chips */}
+      {/* 2. Category Filter Chips - Di atas Search */}
       <ExploreCategoryPills
         selectedCategory={selectedCategory}
         onSelectCategory={setSelectedCategory}
+      />
+
+      {/* 3. Search Bar - Di bawah Kategori */}
+      <ExploreSearchBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
 
       {/* 4. Main Body: Map or List View */}

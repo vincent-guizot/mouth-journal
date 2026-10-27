@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { Search, SlidersHorizontal } from 'lucide-react-native';
+import { View, TextInput, StyleSheet } from 'react-native';
+import { Search } from 'lucide-react-native';
 import { theme } from '../../../config/theme';
 
 interface ExploreSearchBarProps {
@@ -12,7 +12,6 @@ interface ExploreSearchBarProps {
 export const ExploreSearchBar: React.FC<ExploreSearchBarProps> = ({
   searchQuery,
   onSearchChange,
-  onFilterPress,
 }) => {
   return (
     <View style={styles.searchRow}>
@@ -26,14 +25,6 @@ export const ExploreSearchBar: React.FC<ExploreSearchBarProps> = ({
           onChangeText={onSearchChange}
         />
       </View>
-
-      <TouchableOpacity
-        style={styles.filterBtn}
-        activeOpacity={0.8}
-        onPress={onFilterPress}
-      >
-        <SlidersHorizontal size={17} color="#4E2E21" strokeWidth={2.2} />
-      </TouchableOpacity>
     </View>
   );
 };
@@ -56,7 +47,6 @@ const styles = StyleSheet.create({
     height: 42,
     borderWidth: 1,
     borderColor: '#EFE3D3',
-    marginRight: 10,
   },
   searchIcon: {
     marginRight: 8,
@@ -65,15 +55,5 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     color: theme.colors.coffeeBrown,
-  },
-  filterBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: '#FAF5EE',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#EFE3D3',
   },
 });

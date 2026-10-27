@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../../config/firebase';
 import { UserProfile } from '../../models/user';
 import { UserProfileSchema } from '../../schemas/userSchema';
@@ -79,7 +79,10 @@ export class FirestoreUserProfileRepository implements IUserProfileRepository {
 
     if (isFirebaseConfigured && db) {
       const userRef = doc(db, 'users', userId);
-      await updateDoc(userRef, validated as any);
+      // A first profile update commonly happens straight after registration,
+      // before /users/{uid} exists. setDoc with merge handles both create and
+      // update without losing existing server fields.
+      await setDoc(userRef, validated, { merge: true });
     }
 
     await AsyncStorage.setItem(getCacheKey(userId), JSON.stringify(validated));

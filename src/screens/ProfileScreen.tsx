@@ -6,7 +6,6 @@ import { theme } from '../config/theme';
 import { useProfileScreen } from '../features/profile/hooks/useProfileScreen';
 import { ProfileHeroHeader } from '../features/profile/components/ProfileHeroHeader';
 import { ProfileStatsBar } from '../features/profile/components/ProfileStatsBar';
-import { ProfileBadgesSection } from '../features/profile/components/ProfileBadgesSection';
 import { ProfileTabs } from '../features/profile/components/ProfileTabs';
 import { ProfileJournalItem } from '../features/profile/components/ProfileJournalItem';
 
@@ -51,10 +50,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       {/* 2. Culinary Statistics Bar */}
       <ProfileStatsBar stats={stats} />
 
-      {/* 3. Achievements & Badges */}
-      <ProfileBadgesSection />
-
-      {/* 4. Segmented Tabs */}
+      {/* 3. Segmented Tabs */}
       <ProfileTabs
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -62,7 +58,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         placesCount={stats.totalPlaces || 14}
       />
 
-      {/* 5. Tab Content: Journals / Places / Menus / Wishlist */}
+      {/* 4. Tab Content: Journals / Places / Menus / Wishlist */}
       <View style={styles.tabContentContainer}>
         {loading ? (
           <View style={styles.loadingContainer}>

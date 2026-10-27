@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { BookOpen, MapPin, Utensils, Heart } from 'lucide-react-native';
 import { ProfileTab } from '../hooks/useProfileScreen';
 
 interface ProfileTabsProps {
@@ -22,6 +23,7 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
         onPress={() => onTabChange('jurnal')}
         activeOpacity={0.8}
       >
+        <BookOpen size={14} color={activeTab === 'jurnal' ? '#FFFFFF' : '#4E2E21'} />
         <Text
           style={[
             styles.tabButtonText,
@@ -37,6 +39,7 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
         onPress={() => onTabChange('tempat')}
         activeOpacity={0.8}
       >
+        <MapPin size={14} color={activeTab === 'tempat' ? '#FFFFFF' : '#4E2E21'} />
         <Text
           style={[
             styles.tabButtonText,
@@ -52,6 +55,7 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
         onPress={() => onTabChange('menu')}
         activeOpacity={0.8}
       >
+        <Utensils size={14} color={activeTab === 'menu' ? '#FFFFFF' : '#4E2E21'} />
         <Text
           style={[
             styles.tabButtonText,
@@ -67,6 +71,7 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
         onPress={() => onTabChange('wishlist')}
         activeOpacity={0.8}
       >
+        <Heart size={14} color={activeTab === 'wishlist' ? '#FFFFFF' : '#4E2E21'} />
         <Text
           style={[
             styles.tabButtonText,
@@ -90,6 +95,9 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 4,
     alignItems: 'center',
     paddingVertical: 8,
     borderRadius: 14,

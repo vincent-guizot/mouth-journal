@@ -13,6 +13,8 @@ import {
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
 import { theme } from '../config/theme';
 import { UserProfile } from '../services/firebase/authService';
+import { ImageService } from '../services/firebase/imageService';
+import { ScreenEntrance } from '../components/ScreenEntrance';
 import {
   ArrowLeft,
   Camera,
@@ -36,7 +38,7 @@ const { width } = Dimensions.get('window');
 interface EditProfileScreenProps {
   user: UserProfile;
   onBack: () => void;
-  onSave: (updatedProfile: Partial<UserProfile>) => void;
+  onSave: (updatedProfile: Partial<UserProfile>) => Promise<void>;
 }
 
 export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
@@ -45,6 +47,7 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   onSave,
 }) => {
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Profile Header Images
   const [bannerUrl, setBannerUrl] = useState<string>(
@@ -172,6 +175,13 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   const handleChangeBanner = () => {
     Alert.alert('Ganti Foto Banner', 'Pilih suasana banner baru untuk profil kamu:', [
       {
+        text: 'Galeri Foto',
+        onPress: async () => {
+          const uri = await ImageService.pickImageFromGallery();
+          if (uri) setBannerUrl(uri);
+        },
+      },
+      {
         text: 'Aesthetic Cafe',
         onPress: () =>
           setBannerUrl(
@@ -200,26 +210,26 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     Alert.alert('Unggah Foto Profil', 'Pilih sumber foto profil kamu:', [
       {
         text: 'Kamera',
-        onPress: () =>
-          setAvatarUrl(
-            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80'
-          ),
+        onPress: async () => {
+          const uri = await ImageService.takePhotoWithCamera();
+          if (uri) setAvatarUrl(uri);
+        },
       },
       {
         text: 'Galeri Foto',
-        onPress: () =>
-          setAvatarUrl(
-            'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&auto=format&fit=crop&q=80'
-          ),
+        onPress: async () => {
+          const uri = await ImageService.pickImageFromGallery();
+          if (uri) setAvatarUrl(uri);
+        },
       },
       { text: 'Batal', style: 'cancel' },
     ]);
   };
 
-  const handleSaveProfile = (isDraft: boolean = false) => {
+  const handleSaveProfile = async () => {
     const updated: Partial<UserProfile> = {
-      displayName: name.trim() || 'Vincentia',
-      username: username.trim() || 'vincentiaa',
+      displayName: name.trim(),
+      username: username.trim() || undefined,
       email: email.trim() || user.email,
       phoneNumber: phone.trim(),
       bio: bio.trim(),
@@ -233,17 +243,22 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       socialTikTok: tiktok.trim(),
     };
 
-    onSave(updated);
-    Alert.alert(
-      isDraft ? 'Draft Disimpan' : 'Profil Berhasil Diperbarui!',
-      isDraft
-        ? 'Perubahan profil kamu telah disimpan sebagai draft.'
-        : 'Informasi profil dan preferensi kuliner kamu telah diperbarui.'
-    );
+    if (!updated.displayName) {
+      Alert.alert('Nama diperlukan', 'Masukkan nama profil sebelum menyimpan.');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await onSave(updated);
+    } catch (error: any) {
+      Alert.alert('Gagal menyimpan profil', error?.message || 'Coba lagi sebentar.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenEntrance style={styles.container}>
       {/* 1. Header Bar */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -757,24 +772,25 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
             <View style={styles.step2ActionsRow}>
               <TouchableOpacity
                 style={styles.draftBtn}
-                onPress={() => handleSaveProfile(true)}
+                onPress={onBack}
                 activeOpacity={0.8}
               >
-                <Text style={styles.draftBtnText}>Simpan Draft</Text>
+                <Text style={styles.draftBtnText}>Batal</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.saveProfileBtn}
-                onPress={() => handleSaveProfile(false)}
+                onPress={handleSaveProfile}
+                disabled={isSaving}
                 activeOpacity={0.88}
               >
-                <Text style={styles.saveProfileBtnText}>Perbarui Profil</Text>
+                <Text style={styles.saveProfileBtnText}>{isSaving ? 'Menyimpan…' : 'Perbarui Profil'}</Text>
               </TouchableOpacity>
             </View>
           </View>
         )}
       </ScrollView>
-    </View>
+    </ScreenEntrance>
   );
 };
 

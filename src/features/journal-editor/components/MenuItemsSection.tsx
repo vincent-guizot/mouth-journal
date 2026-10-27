@@ -16,12 +16,14 @@ interface MenuItemsSectionProps {
   menuItems: MenuItemRow[];
   onAddMenu: (name: string, price: number, rating: number) => void;
   onRemoveMenu: (id: string) => void;
+  hideAddButton?: boolean;
 }
 
 export const MenuItemsSection: React.FC<MenuItemsSectionProps> = ({
   menuItems,
   onAddMenu,
   onRemoveMenu,
+  hideAddButton = false,
 }) => {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [newName, setNewName] = useState<string>('');
@@ -42,7 +44,7 @@ export const MenuItemsSection: React.FC<MenuItemsSectionProps> = ({
     <View style={styles.sectionBlock}>
       <View style={styles.sectionTitleRow}>
         <View style={styles.badgeNumber}>
-          <Text style={styles.badgeNumberText}>5</Text>
+        <Text style={styles.badgeNumberText}>2</Text>
         </View>
         <Text style={styles.sectionHeading}>Menu yang Dicoba</Text>
       </View>
@@ -83,14 +85,14 @@ export const MenuItemsSection: React.FC<MenuItemsSectionProps> = ({
       ))}
 
       {/* Button + Tambah Menu Lain */}
-      <TouchableOpacity
+      {!hideAddButton && <TouchableOpacity
         style={styles.addMenuButton}
         onPress={() => setModalVisible(true)}
         activeOpacity={0.8}
       >
         <Plus size={16} color={theme.colors.coffeeBrown} style={{ marginRight: 6 }} />
         <Text style={styles.addMenuButtonText}>Tambah Menu Lain</Text>
-      </TouchableOpacity>
+      </TouchableOpacity>}
 
       {/* Modal Dialog for adding item */}
       <Modal visible={modalVisible} transparent animationType="fade">

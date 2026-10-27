@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { EditProfileScreen } from '../../src/screens/EditProfileScreen';
 import { useAuth } from '../../src/context/AuthContext';
 import { userProfileRepository } from '../../src/repositories';
+import { ImageService } from '../../src/services/firebase/imageService';
 import { theme } from '../../src/config/theme';
 
 export default function EditProfileRoute() {
@@ -25,8 +26,17 @@ export default function EditProfileRoute() {
         onBack={() => router.back()}
         onSave={async (updatedProfile) => {
           if (currentUser?.uid) {
-            await userProfileRepository.updateProfile(currentUser.uid, updatedProfile);
-            await updateUser(updatedProfile);
+            const uploadIfLocal = async (uri?: string, folder: string = 'profile') =>
+              uri?.startsWith('file:') || uri?.startsWith('content:')
+                ? ImageService.uploadImage(uri, currentUser.uid, folder)
+                : uri;
+            const profileWithUploadedImages = {
+              ...updatedProfile,
+              photoURL: await uploadIfLocal(updatedProfile.photoURL, 'avatars'),
+              bannerURL: await uploadIfLocal(updatedProfile.bannerURL, 'banners'),
+            };
+            await userProfileRepository.updateProfile(currentUser.uid, profileWithUploadedImages);
+            await updateUser(profileWithUploadedImages);
           }
           router.back();
         }}

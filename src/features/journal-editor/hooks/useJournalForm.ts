@@ -63,9 +63,17 @@ export function useJournalForm({
         : DEFAULT_DEMO_PLACE)
   );
 
-  // Visit date & time
-  const [visitDate, setVisitDate] = useState<string>('12 Okt 2026');
-  const [visitTime, setVisitTime] = useState<string>('10:30');
+  // Visit date
+  const initialVisitedAt = initialJournal?.visitedAt
+    ? new Date(initialJournal.visitedAt)
+    : new Date();
+  const [visitedAt, setVisitedAt] = useState<Date>(initialVisitedAt);
+  const visitDate = visitedAt.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      weekday: 'long',
+      month: 'short',
+      year: 'numeric',
+    });
 
   // Category
   const [selectedCategory, setSelectedCategory] = useState<string>(
@@ -126,18 +134,20 @@ export function useJournalForm({
     }
   };
 
+  const addPhotoUri = (uri: string) => setPhotos((prev) => [...prev, uri]);
+
   const handleRemovePhoto = (idx: number) => {
     setPhotos((prev) => prev.filter((_, i) => i !== idx));
   };
 
   // Menu handlers
-  const handleAddMenu = (name: string, price: number, rating: number) => {
+  const handleAddMenu = (name: string, price: number, rating: number, image?: string) => {
     const newItem: MenuItemRow = {
       id: `m-${Date.now()}`,
       name: name || 'Menu Baru',
       price: price || 35000,
       rating: rating || 5,
-      image: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=200&auto=format&fit=crop&q=80',
+      image: image || 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=200&auto=format&fit=crop&q=80',
     };
     setMenuItems((prev) => [...prev, newItem]);
   };
@@ -214,8 +224,8 @@ export function useJournalForm({
         })),
         totalSpent,
         reviewText: reviewNote,
-        tags: ['Kuliner', selectedCategory],
-        visitedAt: new Date().toISOString(),
+        tags: Array.from(new Set([...(initialJournal?.tags || []), 'Kuliner', selectedCategory])),
+        visitedAt: visitedAt.toISOString(),
         createdAt: initialJournal?.createdAt || new Date().toISOString(),
       };
 
@@ -241,13 +251,13 @@ export function useJournalForm({
   return {
     photos,
     handleAddPhoto,
+    addPhotoUri,
     handleRemovePhoto,
     selectedPlace,
     setSelectedPlace,
     visitDate,
-    setVisitDate,
-    visitTime,
-    setVisitTime,
+    visitedAt,
+    setVisitedAt,
     selectedCategory,
     setSelectedCategory,
     menuItems,

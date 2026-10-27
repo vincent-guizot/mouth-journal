@@ -24,11 +24,7 @@ import {
   Star,
   ChevronRight,
   Navigation,
-  Bookmark,
-  Map,
   Calendar,
-  Clock,
-  Users,
   Plus,
   MessageSquare,
   Utensils,
@@ -67,12 +63,17 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
 
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [isPhotoViewerOpen, setIsPhotoViewerOpen] = useState(false);
-  const [isSaved, setIsSaved] = useState(true);
 
   const placeName = journal?.placeName || 'Tanamera Coffee Roastery';
   const placeAddress = journal?.placeAddress || 'Senopati, Jakarta Selatan';
   const categoryLabel = journal?.subCategoryLabel || 'Kopi/Cafe';
   const overallRating = journal?.overallRating || 4.2;
+  const visitDateLabel = new Date(journal?.visitedAt || Date.now()).toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
   const reviewText =
     journal?.reviewText ||
     'Tempatnya nyaman, kopi nya enak, croissantnya juga flaky banget. Cocok buat kerja sambil ngopi. Suasana nya tenang dan pelayanan ramah. Pasti akan balik lagi!';
@@ -131,15 +132,6 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
     }
   };
 
-  const handleToggleSave = () => {
-    setIsSaved(!isSaved);
-    Alert.alert(
-      !isSaved ? 'Ditambahkan ke Wishlist' : 'Dihapus dari Wishlist',
-      !isSaved
-        ? `${placeName} berhasil disimpan ke daftar Wishlist.`
-        : `${placeName} dihapus dari Wishlist.`
-    );
-  };
 
   const renderStars = (rating: number) => {
     return (
@@ -308,40 +300,15 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
             <ChevronRight size={18} color="#B09B8E" />
           </TouchableOpacity>
 
-          {/* Action Row: 4 Pill Buttons */}
+          {/* Action Row */}
           <View style={styles.actionRow}>
             <TouchableOpacity
               style={styles.actionPill}
-              onPress={() =>
-                Alert.alert(
-                  'Buka Navigasi',
-                  `Membuka petunjuk arah menuju ${placeName}...`
-                )
-              }
+              onPress={onOpenMap}
               activeOpacity={0.8}
             >
               <Navigation size={15} color="#D04A1E" />
               <Text style={styles.actionPillText}>Rute</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionPill, isSaved && styles.actionPillActive]}
-              onPress={handleToggleSave}
-              activeOpacity={0.8}
-            >
-              <Bookmark
-                size={15}
-                color={isSaved ? '#D04A1E' : '#4E2E21'}
-                fill={isSaved ? '#D04A1E' : 'none'}
-              />
-              <Text
-                style={[
-                  styles.actionPillText,
-                  isSaved && { color: '#D04A1E', fontWeight: '700' },
-                ]}
-              >
-                {isSaved ? 'Tersimpan' : 'Simpan'}
-              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -353,39 +320,16 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
               <Text style={styles.actionPillText}>Bagikan</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.actionPill}
-              onPress={onOpenMap}
-              activeOpacity={0.8}
-            >
-              <Map size={15} color="#4E2E21" />
-              <Text style={styles.actionPillText}>Lihat di Peta</Text>
-            </TouchableOpacity>
           </View>
 
-          {/* Visit Info Card (3 Columns) */}
+          {/* Visit Info Card */}
           <View style={styles.visitInfoCard}>
             <View style={styles.visitCol}>
               <Calendar size={18} color="#4E2E21" />
               <Text style={styles.visitColLabel}>Tanggal Kunjungan</Text>
-              <Text style={styles.visitColValue}>12 Okt 2026</Text>
+              <Text style={styles.visitColValue}>{visitDateLabel}</Text>
             </View>
 
-            <View style={styles.verticalDivider} />
-
-            <View style={styles.visitCol}>
-              <Clock size={18} color="#4E2E21" />
-              <Text style={styles.visitColLabel}>Waktu</Text>
-              <Text style={styles.visitColValue}>10:30 - 12:15</Text>
-            </View>
-
-            <View style={styles.verticalDivider} />
-
-            <View style={styles.visitCol}>
-              <Users size={18} color="#4E2E21" />
-              <Text style={styles.visitColLabel}>Bersama</Text>
-              <Text style={styles.visitColValue}>Teman</Text>
-            </View>
           </View>
 
           {/* Tags Row */}
@@ -563,20 +507,9 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
             </View>
           </View>
 
-          {/* Bottom Meta Cards Row (3 side-by-side) */}
+          {/* Bottom Meta Cards Row */}
           <View style={styles.metaCardsRow}>
-            {/* Card 1: Wishlist */}
-            <View style={styles.metaSmallCard}>
-              <View style={styles.metaIconCircle}>
-                <Bookmark size={15} color="#D04A1E" fill="#D04A1E" />
-              </View>
-              <View style={styles.metaSmallContent}>
-                <Text style={styles.metaSmallLabel}>Disimpan ke Wishlist</Text>
-                <Text style={styles.metaSmallValue}>10 Okt 2026</Text>
-              </View>
-            </View>
-
-            {/* Card 2: Visibility */}
+            {/* Visibility */}
             <View style={styles.metaSmallCard}>
               <View style={styles.metaIconCircle}>
                 <Globe size={15} color="#4E2E21" />
@@ -590,7 +523,7 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
               </View>
             </View>
 
-            {/* Card 3: More */}
+            {/* Journal information */}
             <TouchableOpacity
               style={styles.metaSmallCard}
               onPress={() =>
@@ -602,7 +535,7 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
                 <MoreHorizontal size={15} color="#4E2E21" />
               </View>
               <View style={styles.metaSmallContent}>
-                <Text style={styles.metaSmallLabel}>Lainnya</Text>
+                <Text style={styles.metaSmallLabel}>Info Jurnal</Text>
               </View>
               <ChevronRight size={14} color="#B09B8E" />
             </TouchableOpacity>

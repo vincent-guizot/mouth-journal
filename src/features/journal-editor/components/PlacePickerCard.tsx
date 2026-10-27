@@ -17,7 +17,7 @@ export const PlacePickerCard: React.FC<PlacePickerCardProps> = ({
     <View style={styles.sectionBlock}>
       <View style={styles.sectionTitleRow}>
         <View style={styles.badgeNumber}>
-          <Text style={styles.badgeNumberText}>2</Text>
+          <Text style={styles.badgeNumberText}>3</Text>
         </View>
         <Text style={styles.sectionHeading}>Tempat</Text>
       </View>

@@ -1,6 +1,7 @@
 import { IPlacesService, NearbyPlace, MainCategory } from '../../types/places';
 import { OpenStreetMapPlacesAdapter } from './OpenStreetMapPlacesAdapter';
 import { MOCK_PLACES } from '../../mocks/data/mockPlaces';
+import { calculateDistance } from '../../utils/geo';
 
 export class OpenStreetMapService implements IPlacesService {
   private adapter = new OpenStreetMapPlacesAdapter();
@@ -29,12 +30,12 @@ export class OpenStreetMapService implements IPlacesService {
 
       // Fallback lokal jika di mode pengembangan dan OSM kosong/gagal
       if (__DEV__) {
-        return this.getFallbackPlaces(mainCategory, subCategory);
+        return this.getFallbackPlaces(lat, lon, radiusMeters, mainCategory, subCategory);
       }
       return [];
     } catch (error) {
       console.warn('[OpenStreetMapService] Error searchNearby:', error);
-      return __DEV__ ? this.getFallbackPlaces(mainCategory, subCategory) : [];
+      return __DEV__ ? this.getFallbackPlaces(lat, lon, radiusMeters, mainCategory, subCategory) : [];
     }
   }
 
@@ -69,17 +70,22 @@ export class OpenStreetMapService implements IPlacesService {
   }
 
   private getFallbackPlaces(
+    latitude: number,
+    longitude: number,
+    radiusMeters: number,
     mainCategory: MainCategory = 'all',
     subCategory?: string
   ): NearbyPlace[] {
-    let filtered: NearbyPlace[] = MOCK_PLACES;
+    let filtered: NearbyPlace[] = MOCK_PLACES
+      .map((place) => ({ ...place, distanceMeter: calculateDistance(latitude, longitude, place.latitude, place.longitude) }))
+      .filter((place) => (place.distanceMeter || 0) <= radiusMeters);
     if (mainCategory !== 'all') {
       filtered = filtered.filter((p) => p.mainCategory === mainCategory);
     }
     if (subCategory && !subCategory.startsWith('all_')) {
       filtered = filtered.filter((p) => p.subCategory === subCategory);
     }
-    return filtered;
+    return filtered.sort((a, b) => (a.distanceMeter || 0) - (b.distanceMeter || 0));
   }
 }
 

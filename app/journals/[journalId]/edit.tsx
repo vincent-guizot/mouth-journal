@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { EditJournalScreen } from '../../../src/screens/EditJournalScreen';
+import { AddLogScreen } from '../../../src/screens/AddLogScreen';
 import { useAuth } from '../../../src/context/AuthContext';
 import { journalRepository } from '../../../src/repositories';
-import { DiaryEntry } from '../../../src/types/diary';
+import { Journal } from '../../../src/models/journal';
 import { theme } from '../../../src/config/theme';
 
 export default function JournalEditRoute() {
@@ -14,7 +14,7 @@ export default function JournalEditRoute() {
     initialData?: string;
   }>();
   const { currentUser } = useAuth();
-  const [journal, setJournal] = useState<DiaryEntry | null>(() => {
+  const [journal, setJournal] = useState<Journal | null>(() => {
     if (initialData) {
       try {
         return JSON.parse(initialData);
@@ -33,7 +33,7 @@ export default function JournalEditRoute() {
         .getJournalById(currentUser.uid, journalId)
         .then((fetched) => {
           if (fetched) {
-            setJournal(fetched as unknown as DiaryEntry);
+            setJournal(fetched);
           }
         })
         .finally(() => setIsLoading(false));
@@ -48,20 +48,28 @@ export default function JournalEditRoute() {
     );
   }
 
+  if (!journal) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.notFoundText}>Jurnal tidak ditemukan atau sudah dihapus.</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>Kembali</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <EditJournalScreen
-        journal={journal}
-        onBack={() => router.back()}
-        onSave={async (updated) => {
-          if (currentUser?.uid && updated.id) {
-            await journalRepository.updateJournal(currentUser.uid, updated.id, updated as any);
-          }
-          router.back();
-        }}
-        onDelete={async (id) => {
-          if (currentUser?.uid) {
-            await journalRepository.deleteJournal(currentUser.uid, id);
+      <AddLogScreen
+        initialJournal={journal}
+        userId={currentUser?.uid || ''}
+        userName={currentUser?.displayName || 'Me'}
+        onClose={() => router.back()}
+        onSuccess={() => router.replace('/(tabs)/diary')}
+        onDelete={async () => {
+          if (currentUser?.uid && journal?.id) {
+            await journalRepository.deleteJournal(currentUser.uid, journal.id);
           }
           router.replace('/(tabs)/diary');
         }}
@@ -81,4 +89,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  notFoundText: { color: theme.colors.textSecondary, marginBottom: 14 },
+  backButton: { backgroundColor: theme.colors.terracotta, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10 },
+  backButtonText: { color: '#FFFFFF', fontWeight: '700' },
 });

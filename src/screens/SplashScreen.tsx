@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { theme } from '../config/theme';
 import { SplashMasterAssets } from '../config/assets';
 
@@ -50,45 +49,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     >
       {/* Top Brand Section */}
       <View style={styles.topSection}>
-        {/* Monogram Vector Mark (Lips + Steam Lines) */}
-        <View style={styles.logoContainer}>
-          <Svg width={64} height={64} viewBox="0 0 100 100" fill="none">
-            {/* Wavy Steam Lines */}
-            <Path
-              d="M42 6 C40 14 46 18 44 26"
-              stroke="#D04A1E"
-              strokeWidth="4"
-              strokeLinecap="round"
-            />
-            <Path
-              d="M58 8 C60 16 54 20 56 28"
-              stroke="#D04A1E"
-              strokeWidth="4"
-              strokeLinecap="round"
-            />
-
-            {/* Linear M / Smiling Mouth Outline */}
-            <Path
-              d="M24 38 L24 74 C24 82 30 88 38 88 L40 88 C45 88 48 83 50 78 C52 83 55 88 60 88 L62 88 C70 88 76 82 76 74 L76 38"
-              stroke="#4E2E21"
-              strokeWidth="6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            {/* Inner Lip Contour */}
-            <Path
-              d="M34 50 C42 60 47 62 50 62 C53 62 58 60 66 50"
-              stroke="#4E2E21"
-              strokeWidth="5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
-        </View>
-
-        {/* Brand Name */}
-        <Text style={styles.brandTitle}>MouthJournal</Text>
-        <Text style={styles.brandSubtitle}>FOOD DIARY</Text>
+        <Image source={require('../../assets/Logo.png')} style={styles.brandLogo} resizeMode="contain" />
 
         {/* Brand Taglines */}
         <View style={styles.taglineBox}>
@@ -140,27 +101,7 @@ const styles = StyleSheet.create({
     paddingTop: height * 0.08,
     paddingHorizontal: 24,
   },
-  logoContainer: {
-    width: 76,
-    height: 76,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  brandTitle: {
-    fontFamily: theme.fonts.serifBold,
-    fontSize: 34,
-    fontWeight: '800',
-    color: '#4E2E21',
-    letterSpacing: -0.5,
-  },
-  brandSubtitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#7A675B',
-    letterSpacing: 4.5,
-    marginTop: 6,
-  },
+  brandLogo: { width: 210, height: 150 },
   taglineBox: {
     alignItems: 'center',
     marginTop: 20,

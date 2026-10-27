@@ -87,6 +87,7 @@ export const ExploreScreen: React.FC<ExploreScreenProps> = ({
       <ExploreSearchBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onFilterPress={() => setSelectedCategory(selectedCategory === 'all' ? 'drinks' : 'all')}
       />
 
       {/* 3. Category Filter Chips */}

@@ -10,11 +10,9 @@ import {
 import { theme } from '../config/theme';
 import {
   ArrowLeft,
-  User,
   MapPin,
   Palette,
   Utensils,
-  Database,
   ChevronRight,
 } from 'lucide-react-native';
 
@@ -31,99 +29,24 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onShowOnboarding,
   onNavigateCategory,
 }) => {
-  const handleAccountPress = () => {
-    Alert.alert('Account & Session', 'Pilih tindakan akun:', [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Keluar (Logout)',
-        style: 'destructive',
-        onPress: onLogout,
-      },
-    ]);
-  };
-
-  const handleDataPress = () => {
-    Alert.alert('Data & Support', 'Pilih bantuan atau kelola data:', [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Lihat Welcome & Intro',
-        onPress: () => {
-          if (onShowOnboarding) onShowOnboarding();
-        },
-      },
-      {
-        text: 'Hapus Cache (24.5 MB)',
-        onPress: () =>
-          Alert.alert('Hapus Cache', 'Cache aplikasi berhasil dibersihkan.'),
-      },
-    ]);
-  };
-
   const settingsItems = [
     {
-      id: 'account',
-      title: 'Account & Session',
-      subtitle: 'Kelola akun, informasi login, dan keamanan.',
-      bullets: [
-        'Informasi akun',
-        'Metode login',
-        'Ganti password',
-        'Sesi login aktif',
-        'Logout',
-        'Hapus akun',
-      ],
-      icon: User,
-      onPress: handleAccountPress,
-    },
-    {
       id: 'location',
-      title: 'Location & Maps',
-      subtitle: 'Atur lokasi dan pencarian tempat makan.',
-      bullets: [
-        'Izin akses lokasi',
-        'Radius pencarian',
-        'Gunakan lokasi saat membuat jurnal',
-      ],
+      title: 'Izin akses lokasi',
+      subtitle: 'Atur izin dan radius pencarian tempat di sekitarmu.',
       icon: MapPin,
-      onPress: () =>
-        Alert.alert('Location & Maps', 'Radius pencarian default: 3.5 km.'),
     },
     {
       id: 'appearance',
       title: 'Appearance',
-      subtitle: 'Pilih tema tampilan aplikasi.',
-      bullets: ['Light', 'Dark', 'System', 'Preview tema'],
+      subtitle: 'Pilih tampilan terang, gelap, atau mengikuti perangkat.',
       icon: Palette,
-      onPress: () =>
-        Alert.alert('Appearance', 'Mode tampilan aktif: Light (Warm Cafe Aesthetic).'),
     },
     {
       id: 'preferences',
       title: 'Food Preferences',
-      subtitle: 'Personalisasi pengalaman kuliner.',
-      bullets: [
-        'Kategori favorit',
-        'Jenis makanan/minuman',
-        'Filter default di Explore',
-        'Preferensi rekomendasi',
-      ],
+      subtitle: 'Pilih kategori kuliner yang paling kamu suka.',
       icon: Utensils,
-      onPress: () =>
-        Alert.alert('Food Preferences', 'Preferensi favorit: Kopi/Cafe & Restoran Nusantara.'),
-    },
-    {
-      id: 'data',
-      title: 'Data & Support',
-      subtitle: 'Kelola data jurnal dan dapatkan bantuan.',
-      bullets: [
-        'Ekspor data',
-        'Penggunaan penyimpanan',
-        'Hapus cache',
-        'Bantuan & FAQ',
-        'Tentang aplikasi',
-      ],
-      icon: Database,
-      onPress: handleDataPress,
     },
   ];
 
@@ -153,13 +76,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <TouchableOpacity
                 key={item.id}
                 style={styles.card}
-                onPress={() => {
-                  if (onNavigateCategory) {
-                    onNavigateCategory(item.id as any);
-                  } else {
-                    item.onPress();
-                  }
-                }}
+                onPress={() => onNavigateCategory?.(item.id as 'location' | 'appearance' | 'preferences')}
                 activeOpacity={0.88}
               >
                 <View style={styles.iconSquare}>
@@ -174,12 +91,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
                   <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
 
-                  {/* Bullet points */}
-                  <View style={styles.bulletWrapper}>
-                    <Text style={styles.bulletText}>
-                      {item.bullets.map((b) => `• ${b}`).join('   ')}
-                    </Text>
-                  </View>
                 </View>
               </TouchableOpacity>
             );
@@ -207,9 +118,13 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   backBtn: {
-    padding: 6,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surfaceSubtle,
     marginRight: 10,
-    marginLeft: -4,
   },
   headerTitleGroup: {
     flex: 1,
@@ -266,14 +181,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#7A675B',
     marginTop: 2,
-    lineHeight: 16,
-  },
-  bulletWrapper: {
-    marginTop: 6,
-  },
-  bulletText: {
-    fontSize: 11,
-    color: '#8C7A70',
     lineHeight: 16,
   },
 });

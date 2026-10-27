@@ -16,7 +16,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
     <View style={styles.sectionBlock}>
       <View style={styles.sectionTitleRow}>
         <View style={styles.badgeNumber}>
-          <Text style={styles.badgeNumberText}>4</Text>
+        <Text style={styles.badgeNumberText}>5</Text>
         </View>
         <Text style={styles.sectionHeading}>Kategori</Text>
       </View>

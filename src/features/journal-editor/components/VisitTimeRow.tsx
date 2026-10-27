@@ -1,32 +1,27 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Calendar, Clock, ChevronDown } from 'lucide-react-native';
+import { Calendar, ChevronDown } from 'lucide-react-native';
 import { theme } from '../../../config/theme';
 
 interface VisitTimeRowProps {
   visitDate: string;
-  visitTime: string;
   onPressDate?: () => void;
-  onPressTime?: () => void;
 }
 
 export const VisitTimeRow: React.FC<VisitTimeRowProps> = ({
   visitDate,
-  visitTime,
   onPressDate,
-  onPressTime,
 }) => {
   return (
     <View style={styles.sectionBlock}>
       <View style={styles.sectionTitleRow}>
         <View style={styles.badgeNumber}>
-          <Text style={styles.badgeNumberText}>3</Text>
+          <Text style={styles.badgeNumberText}>4</Text>
         </View>
-        <Text style={styles.sectionHeading}>Tanggal & Waktu</Text>
+        <Text style={styles.sectionHeading}>Tanggal Kunjungan</Text>
       </View>
 
       <View style={styles.dateTimeRow}>
-        {/* Input Tanggal */}
         <TouchableOpacity
           style={styles.dateTimeInput}
           activeOpacity={0.8}
@@ -37,16 +32,6 @@ export const VisitTimeRow: React.FC<VisitTimeRowProps> = ({
           <ChevronDown size={15} color={theme.colors.textTertiary} />
         </TouchableOpacity>
 
-        {/* Input Waktu */}
-        <TouchableOpacity
-          style={styles.dateTimeInput}
-          activeOpacity={0.8}
-          onPress={onPressTime}
-        >
-          <Clock size={15} color={theme.colors.coffeeBrown} style={{ marginRight: 6 }} />
-          <Text style={styles.dateTimeValue}>{visitTime}</Text>
-          <ChevronDown size={15} color={theme.colors.textTertiary} />
-        </TouchableOpacity>
       </View>
     </View>
   );

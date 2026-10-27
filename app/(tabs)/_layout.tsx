@@ -24,7 +24,6 @@ export default function TabsLayout() {
         userAvatar={currentUser?.photoURL}
         onProfilePress={() => router.push('/(tabs)/profile')}
         onNotificationPress={() => router.push('/notifications')}
-        onAIPress={() => router.push('/recommendations')}
       />
 
       <Tabs

@@ -36,6 +36,10 @@ export const WishlistScreen: React.FC<WishlistScreenProps> = ({
     filteredMenus,
     handleToggleHeart,
     handleRemoveMenu,
+    minimumRating,
+    setMinimumRating,
+    sortAscending,
+    setSortAscending,
   } = useWishlist(userId);
 
   const handleCardPress = (item: WishlistCardItem) => {
@@ -73,6 +77,8 @@ export const WishlistScreen: React.FC<WishlistScreenProps> = ({
       <WishlistSearchBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onFilterPress={() => setMinimumRating(minimumRating === null ? 4.5 : null)}
+        onSortPress={() => setSortAscending(!sortAscending)}
       />
 
       {/* 4. List Content */}

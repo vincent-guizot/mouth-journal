@@ -15,6 +15,8 @@ export function useWishlist(userId: string) {
   const [placesList, setPlacesList] = useState<WishlistCardItem[]>(MOCK_WISHLIST_PLACES);
   const [menuList, setMenuList] = useState<WishlistMenuItem[]>(MOCK_WISHLIST_MENUS);
   const [loading, setLoading] = useState<boolean>(false);
+  const [minimumRating, setMinimumRating] = useState<number | null>(null);
+  const [sortAscending, setSortAscending] = useState(false);
 
   const handleToggleHeart = (item: WishlistCardItem) => {
     Alert.alert('Wishlist', `Hapus "${item.name}" dari Wishlist?`, [
@@ -44,25 +46,23 @@ export function useWishlist(userId: string) {
 
   const filteredPlaces = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return placesList;
-    return placesList.filter(
+    const result = placesList.filter(
       (item) =>
-        item.name.toLowerCase().includes(q) ||
-        item.address.toLowerCase().includes(q) ||
-        item.description.toLowerCase().includes(q)
+        (!q || item.name.toLowerCase().includes(q) || item.address.toLowerCase().includes(q) || item.description.toLowerCase().includes(q)) &&
+        minimumRating === null
     );
-  }, [placesList, searchQuery]);
+    return result.sort((a, b) => sortAscending ? a.name.localeCompare(b.name) : a.name.localeCompare(b.name));
+  }, [placesList, searchQuery, minimumRating, sortAscending]);
 
   const filteredMenus = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return menuList;
-    return menuList.filter(
+    const result = menuList.filter(
       (item) =>
-        item.name.toLowerCase().includes(q) ||
-        item.placeName.toLowerCase().includes(q) ||
-        item.notes.toLowerCase().includes(q)
+        (!q || item.name.toLowerCase().includes(q) || item.placeName.toLowerCase().includes(q) || item.notes.toLowerCase().includes(q)) &&
+        (minimumRating === null || Number(item.price.replace(/[^0-9]/g, '')) >= 50000)
     );
-  }, [menuList, searchQuery]);
+    return result.sort((a, b) => sortAscending ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+  }, [menuList, searchQuery, minimumRating, sortAscending]);
 
   return {
     activeTab,
@@ -74,6 +74,10 @@ export function useWishlist(userId: string) {
     filteredPlaces,
     filteredMenus,
     loading,
+    minimumRating,
+    setMinimumRating,
+    sortAscending,
+    setSortAscending,
     handleToggleHeart,
     handleRemoveMenu,
   };

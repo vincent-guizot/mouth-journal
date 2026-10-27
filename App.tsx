@@ -193,7 +193,6 @@ export default function App() {
           userAvatar={currentUser.photoURL}
           onProfilePress={() => setActiveTab("profile")}
           onNotificationPress={() => setIsNotificationsOpen(true)}
-          onAIPress={() => setIsAIRecommendationsOpen(true)}
         />
 
         {/* Tab Screens View */}

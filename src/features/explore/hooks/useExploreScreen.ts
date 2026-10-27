@@ -11,7 +11,7 @@ export interface UseExploreScreenProps {
 }
 
 export function useExploreScreen({ userLocation, userId }: UseExploreScreenProps) {
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [viewMode, setViewMode] = useState<'map' | 'list'>('list');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedSort, setSelectedSort] = useState<'terdekat' | 'rating' | 'terbaru'>('terdekat');
@@ -26,7 +26,7 @@ export function useExploreScreen({ userLocation, userId }: UseExploreScreenProps
       const results = await placesService.searchNearby(
         userLocation.latitude,
         userLocation.longitude,
-        5000,
+        2500,
         selectedCategory as any
       );
       setPlaces(results);

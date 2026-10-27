@@ -13,11 +13,10 @@ import { DiaryEntry } from '../types/diary';
 import { NearbyPlace, UserLocation } from '../types/places';
 import { DiaryCard } from '../components/DiaryCard';
 import { theme } from '../config/theme';
-import { Search, SlidersHorizontal } from 'lucide-react-native';
+import { Search } from 'lucide-react-native';
 import { useDiaryScreen } from '../features/diary/hooks/useDiaryScreen';
 import { DiarySegmentTab } from '../features/diary/components/DiarySegmentTab';
 import { DiaryCategoryPills } from '../features/diary/components/DiaryCategoryPills';
-import { DiaryAICallout } from '../features/diary/components/DiaryAICallout';
 import { DiaryEmptyView } from '../features/diary/components/DiaryEmptyView';
 
 export interface DiaryScreenProps {
@@ -99,15 +98,9 @@ export const DiaryScreen: React.FC<DiaryScreenProps> = ({
           />
         </View>
 
-        <TouchableOpacity style={styles.filterBtn} activeOpacity={0.8}>
-          <SlidersHorizontal size={17} color={theme.colors.coffeeBrown} strokeWidth={2.2} />
-        </TouchableOpacity>
       </View>
 
-      {/* 3. AI Recommendations Discovery Banner */}
-      <DiaryAICallout onPress={onOpenAIRecommendations} />
-
-      {/* 4. Category Filter Chips (Horizontal) */}
+      {/* 3. Category Filter Chips (Horizontal) */}
       <DiaryCategoryPills
         selectedCategory={selectedCategory}
         onSelectCategory={setSelectedCategory}
@@ -168,7 +161,7 @@ const styles = StyleSheet.create({
     height: 42,
     borderWidth: 1,
     borderColor: '#EFE3D3',
-    marginRight: 10,
+    marginRight: 0,
   },
   searchIcon: {
     marginRight: 8,
@@ -177,16 +170,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     color: theme.colors.coffeeBrown,
-  },
-  filterBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: '#FAF5EE',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#EFE3D3',
   },
   feedContent: {
     paddingHorizontal: theme.spacing.lg,

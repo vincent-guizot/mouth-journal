@@ -93,3 +93,48 @@ try {
 } catch (err) {
   console.error('[patch-rn-polyfills] Error patching expo re-exports:', err);
 }
+
+// 4. Ensure nested codegen in babel-preset-expo does not override root codegen 0.88.0
+const nestedCodegenPath = path.join(
+  projectRoot,
+  'node_modules',
+  'babel-preset-expo',
+  'node_modules',
+  '@react-native',
+  'codegen'
+);
+
+try {
+  if (fs.existsSync(nestedCodegenPath)) {
+    fs.rmSync(nestedCodegenPath, { recursive: true, force: true });
+    console.log('[patch-rn-polyfills] Removed nested legacy codegen in babel-preset-expo');
+  } else {
+    console.log('[patch-rn-polyfills] No nested legacy codegen found');
+  }
+} catch (err) {
+  console.error('[patch-rn-polyfills] Error removing nested codegen:', err);
+}
+
+// 5. Ensure hermes-parser supports Flow readonly & variance annotations (>= 0.37.0)
+const hermesParserPkgPath = path.join(projectRoot, 'node_modules', 'hermes-parser', 'package.json');
+try {
+  if (fs.existsSync(hermesParserPkgPath)) {
+    const hpPkg = JSON.parse(fs.readFileSync(hermesParserPkgPath, 'utf8'));
+    const versionParts = hpPkg.version.split('.').map(Number);
+    if (versionParts[0] === 0 && versionParts[1] < 37) {
+      console.log(`[patch-rn-polyfills] Upgrading hermes-parser from ${hpPkg.version} to 0.37.0...`);
+      const { execSync } = require('child_process');
+      execSync('npm pack hermes-parser@0.37.0', { cwd: projectRoot, stdio: 'ignore' });
+      const tarball = fs.readdirSync(projectRoot).find(f => f.startsWith('hermes-parser-') && f.endsWith('.tgz'));
+      if (tarball) {
+        execSync(`tar -xzf ${tarball} --strip-components=1 -C node_modules/hermes-parser`, { cwd: projectRoot, stdio: 'ignore' });
+        fs.unlinkSync(path.join(projectRoot, tarball));
+        console.log('[patch-rn-polyfills] Successfully upgraded hermes-parser to 0.37.0');
+      }
+    } else {
+      console.log(`[patch-rn-polyfills] hermes-parser version ${hpPkg.version} is compatible (>= 0.37.0)`);
+    }
+  }
+} catch (err) {
+  console.error('[patch-rn-polyfills] Error verifying hermes-parser:', err);
+}

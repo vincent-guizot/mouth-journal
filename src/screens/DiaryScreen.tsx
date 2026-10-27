@@ -85,7 +85,13 @@ export const DiaryScreen: React.FC<DiaryScreenProps> = ({
         onSegmentChange={setActiveSegment}
       />
 
-      {/* 2. Search Bar + Sliders Filter Button */}
+      {/* 2. Category Filter Chips (Horizontal) - Di atas Search */}
+      <DiaryCategoryPills
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+      />
+
+      {/* 3. Search Bar - Di bawah Kategori */}
       <View style={styles.searchRow}>
         <View style={styles.searchBox}>
           <Search size={16} color={theme.colors.textTertiary} style={styles.searchIcon} />
@@ -97,14 +103,7 @@ export const DiaryScreen: React.FC<DiaryScreenProps> = ({
             onChangeText={setSearchQuery}
           />
         </View>
-
       </View>
-
-      {/* 3. Category Filter Chips (Horizontal) */}
-      <DiaryCategoryPills
-        selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
-      />
 
       {/* 5. Diary Cards Feed */}
       {loading ? (

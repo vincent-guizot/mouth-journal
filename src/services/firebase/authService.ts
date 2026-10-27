@@ -62,14 +62,10 @@ export class AuthService {
         return profile;
       }
 
-      // 3. Fallback demo HANYA saat pengembangan lokal (__DEV__)
-      if (__DEV__) {
-        return DEMO_USER;
-      }
-
+      // 3. Jangan auto-login demo saat startup agar prototipe dimulai dari Splash -> Login -> Home
       return null;
     } catch {
-      return __DEV__ ? DEMO_USER : null;
+      return null;
     }
   }
 

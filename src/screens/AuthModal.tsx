@@ -312,6 +312,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <AppleLogo size={20} />
                 <Text style={styles.socialBtnText}>Lanjut dengan Apple</Text>
               </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.socialBtn, { backgroundColor: '#FAF5EE', borderColor: '#D06B3F' }]}
+                onPress={() => onSuccess(DEMO_USER)}
+                activeOpacity={0.85}
+              >
+                <Sparkles size={18} color="#D06B3F" />
+                <Text style={[styles.socialBtnText, { color: '#D06B3F', fontWeight: '700' }]}>
+                  Masuk Cepat (Akun Demo)
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {/* Bottom Register Switch */}

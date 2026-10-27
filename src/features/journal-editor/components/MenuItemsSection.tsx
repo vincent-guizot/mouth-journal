@@ -84,15 +84,19 @@ export const MenuItemsSection: React.FC<MenuItemsSectionProps> = ({
         </View>
       ))}
 
-      {/* Button + Tambah Menu Lain */}
-      {!hideAddButton && <TouchableOpacity
-        style={styles.addMenuButton}
-        onPress={() => setModalVisible(true)}
-        activeOpacity={0.8}
-      >
-        <Plus size={16} color={theme.colors.coffeeBrown} style={{ marginRight: 6 }} />
-        <Text style={styles.addMenuButtonText}>Tambah Menu Lain</Text>
-      </TouchableOpacity>}
+      {/* Button + Tambah Menu */}
+      {!hideAddButton && (
+        <TouchableOpacity
+          style={styles.addMenuButton}
+          onPress={() => setModalVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Plus size={16} color={theme.colors.coffeeBrown} style={{ marginRight: 6 }} />
+          <Text style={styles.addMenuButtonText}>
+            {menuItems.length === 0 ? '+ Tambah Menu yang Dipesan' : '+ Tambah Menu Lain'}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {/* Modal Dialog for adding item */}
       <Modal visible={modalVisible} transparent animationType="fade">

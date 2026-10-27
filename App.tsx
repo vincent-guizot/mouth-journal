@@ -8,9 +8,12 @@ import {
   Caveat_700Bold,
 } from "@expo-google-fonts/caveat";
 import {
-  PlayfairDisplay_700Bold,
-  PlayfairDisplay_600SemiBold,
-} from "@expo-google-fonts/playfair-display";
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+} from "@expo-google-fonts/manrope";
 import { Header } from "./src/components/Header";
 import { BottomNavBar, TabType } from "./src/components/BottomNavBar";
 import { DiaryScreen } from "./src/screens/DiaryScreen";
@@ -45,8 +48,11 @@ export default function App() {
   const [fontsLoaded] = useFonts({
     Caveat_600SemiBold,
     Caveat_700Bold,
-    PlayfairDisplay_700Bold,
-    PlayfairDisplay_600SemiBold,
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
   });
 
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);

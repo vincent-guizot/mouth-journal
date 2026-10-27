@@ -30,6 +30,8 @@ import {
   Utensils,
   Globe,
   MoreHorizontal,
+  Tag as TagIcon,
+  CheckCircle2,
 } from 'lucide-react-native';
 
 interface DetailJournalScreenProps {
@@ -159,7 +161,7 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Hero Image Section */}
+        {/* Hero Image Section with Layered Cafe Name & Actions */}
         <View style={styles.heroContainer}>
           <TouchableOpacity
             style={styles.heroImageTouch}
@@ -170,6 +172,8 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
               source={{ uri: photos[selectedPhotoIndex] || photos[0] }}
               style={styles.heroImage}
             />
+            {/* Scrim/Dark Gradient Overlay */}
+            <View style={styles.heroScrimOverlay} />
           </TouchableOpacity>
 
           {/* Top Floating Action Header */}
@@ -226,9 +230,63 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
               {selectedPhotoIndex + 1} / {photos.length}
             </Text>
           </TouchableOpacity>
+
+          {/* Layered Content: Nama Tempat, Kategori, Rating, Rute & Bagikan */}
+          <View style={styles.heroBottomLayer}>
+            <View style={styles.heroBadgeRow}>
+              <View style={styles.heroCategoryPill}>
+                <Coffee size={12} color="#FFFFFF" />
+                <Text style={styles.heroCategoryText}>{categoryLabel}</Text>
+              </View>
+
+              <View style={styles.heroRatingBadge}>
+                <Star size={12} color="#F39A28" fill="#F39A28" />
+                <Text style={styles.heroRatingText}>{overallRating}</Text>
+                <Text style={styles.heroVotesText}>(1.2K)</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={onOpenPlaceDetail}
+              activeOpacity={0.9}
+              style={styles.heroTitleRow}
+            >
+              <Text style={styles.heroPlaceName} numberOfLines={2}>
+                {placeName}
+              </Text>
+              <ChevronRight size={22} color="rgba(255,255,255,0.8)" style={{ marginLeft: 6, marginTop: 4 }} />
+            </TouchableOpacity>
+
+            <View style={styles.heroAddressRow}>
+              <MapPin size={13} color="#FFB199" />
+              <Text style={styles.heroAddressText} numberOfLines={1}>
+                {placeAddress}
+              </Text>
+            </View>
+
+            <View style={styles.heroActionRow}>
+              <TouchableOpacity
+                style={styles.heroRouteBtn}
+                onPress={onOpenMap}
+                activeOpacity={0.85}
+              >
+                <Navigation size={15} color="#FFFFFF" />
+                <Text style={styles.heroRouteBtnText}>Rute</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.heroShareBtn}
+                onPress={handleShare}
+                activeOpacity={0.85}
+              >
+                <Share2 size={15} color="#FFFFFF" />
+                <Text style={styles.heroShareBtnText}>Bagikan</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
 
-        {/* Horizontal Thumbnails Strip */}
+        {/* Horizontal Thumbnails Strip (Di bawah nama cafe: foto-foto) */}
         <View style={styles.thumbStripContainer}>
           {photos.slice(0, 5).map((uri, idx) => {
             const isSelected = idx === selectedPhotoIndex;
@@ -246,7 +304,7 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
                 <Image source={{ uri }} style={styles.thumbImage} />
                 {isLast && (
                   <View style={styles.thumbOverlay}>
-                    <Text style={styles.thumbOverlayText}>+1</Text>
+                    <Text style={styles.thumbOverlayText}>+{photos.length - 4}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -256,186 +314,17 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
 
         {/* Content Body */}
         <View style={styles.bodyContainer}>
-          {/* Selected Place Card */}
-          <TouchableOpacity
-            style={styles.venueCard}
-            onPress={onOpenPlaceDetail}
-            activeOpacity={0.88}
-          >
-            <Image
-              source={{
-                uri:
-                  photos[3] ||
-                  'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400&auto=format&fit=crop&q=80',
-              }}
-              style={styles.venueThumb}
-            />
-
-            <View style={styles.venueInfo}>
-              <Text style={styles.venueName} numberOfLines={1}>
-                {placeName}
-              </Text>
-
-              <View style={styles.venueAddressRow}>
-                <MapPin size={12} color="#8C7A70" />
-                <Text style={styles.venueAddress} numberOfLines={1}>
-                  {placeAddress}
-                </Text>
-              </View>
-
-              <View style={styles.venueMetaRow}>
-                <View style={styles.categoryPill}>
-                  <Coffee size={11} color="#6B3F2E" />
-                  <Text style={styles.categoryPillText}>{categoryLabel}</Text>
-                </View>
-
-                <View style={styles.ratingGroup}>
-                  {renderStars(overallRating)}
-                  <Text style={styles.ratingNumber}>{overallRating}</Text>
-                  <Text style={styles.ratingVotes}>(1.2K)</Text>
-                </View>
-              </View>
-            </View>
-
-            <ChevronRight size={18} color="#B09B8E" />
-          </TouchableOpacity>
-
-          {/* Action Row */}
-          <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={styles.actionPill}
-              onPress={onOpenMap}
-              activeOpacity={0.8}
-            >
-              <Navigation size={15} color="#D04A1E" />
-              <Text style={styles.actionPillText}>Rute</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionPill}
-              onPress={handleShare}
-              activeOpacity={0.8}
-            >
-              <Share2 size={15} color="#4E2E21" />
-              <Text style={styles.actionPillText}>Bagikan</Text>
-            </TouchableOpacity>
-
-          </View>
-
-          {/* Visit Info Card */}
-          <View style={styles.visitInfoCard}>
-            <View style={styles.visitCol}>
-              <Calendar size={18} color="#4E2E21" />
-              <Text style={styles.visitColLabel}>Tanggal Kunjungan</Text>
-              <Text style={styles.visitColValue}>{visitDateLabel}</Text>
-            </View>
-
-          </View>
-
-          {/* Tags Row */}
-          <View style={styles.tagsContainer}>
-            {tags.map((tag, idx) => {
-              const isFirst = idx === 0;
-              return (
-                <View
-                  key={idx}
-                  style={[
-                    styles.tagBadge,
-                    isFirst ? styles.tagBadgeActive : styles.tagBadgeNormal,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.tagBadgeText,
-                      isFirst && styles.tagBadgeTextActive,
-                    ]}
-                  >
-                    {tag}
-                  </Text>
-                </View>
-              );
-            })}
-
-            <TouchableOpacity
-              style={styles.tagBadgeAdd}
-              onPress={() =>
-                Alert.alert('Tambah Tag', 'Ketikkan tag baru untuk jurnal ini.')
-              }
-            >
-              <Plus size={13} color="#6B3F2E" />
-              <Text style={styles.tagBadgeAddText}>Tambah Tag</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Rating Pengalaman Card (4 Columns) */}
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionHeaderRow}>
-              <View style={styles.sectionIconCircle}>
-                <Star size={13} color="#FFFFFF" fill="#FFFFFF" />
-              </View>
-              <Text style={styles.sectionTitle}>Rating Pengalaman</Text>
-            </View>
-
-            <View style={styles.criteriaRow}>
-              <View style={styles.criteriaCol}>
-                <Text style={styles.criteriaLabel}>Rasa</Text>
-                {renderStars(criteria.taste)}
-                <Text style={styles.criteriaScore}>{criteria.taste.toFixed(1)}</Text>
-              </View>
-
-              <View style={styles.criteriaCol}>
-                <Text style={styles.criteriaLabel}>Suasana</Text>
-                {renderStars(criteria.ambiance)}
-                <Text style={styles.criteriaScore}>{criteria.ambiance.toFixed(1)}</Text>
-              </View>
-
-              <View style={styles.criteriaCol}>
-                <Text style={styles.criteriaLabel}>Pelayanan</Text>
-                {renderStars(criteria.service)}
-                <Text style={styles.criteriaScore}>{criteria.service.toFixed(1)}</Text>
-              </View>
-
-              <View style={styles.criteriaCol}>
-                <Text style={styles.criteriaLabel}>Value for Money</Text>
-                {renderStars(criteria.price)}
-                <Text style={styles.criteriaScore}>{criteria.price.toFixed(1)}</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Catatan / Review Card */}
-          <View style={styles.sectionCard}>
-            <View style={styles.reviewHeaderRow}>
-              <View style={styles.reviewHeaderLeft}>
-                <View style={styles.sectionIconCircle}>
-                  <MessageSquare size={13} color="#FFFFFF" />
-                </View>
-                <Text style={styles.sectionTitle}>Catatan / Review</Text>
-              </View>
-
-              <TouchableOpacity
-                style={styles.editReviewBtn}
-                onPress={() => journal && onEdit && onEdit(journal)}
-                activeOpacity={0.8}
-              >
-                <Pencil size={11} color="#4E2E21" />
-                <Text style={styles.editReviewBtnText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.reviewBodyBox}>
-              <Text style={styles.reviewBodyText}>{reviewText}</Text>
-            </View>
-          </View>
-
-          {/* Menu yang Dicoba Section */}
+          {/* 1. Menu yang Dicoba Section (Di bawah nama cafe & foto-foto) */}
           <View style={styles.sectionCard}>
             <View style={styles.menuHeaderRow}>
               <View style={styles.reviewHeaderLeft}>
                 <View style={styles.sectionIconCircle}>
                   <Utensils size={13} color="#FFFFFF" />
                 </View>
-                <Text style={styles.sectionTitle}>Menu yang Dicoba</Text>
+                <View>
+                  <Text style={styles.sectionTitle}>Menu yang Dicoba</Text>
+                  <Text style={styles.sectionSubtitle}>{menuItems.length} menu diunggah</Text>
+                </View>
               </View>
 
               <TouchableOpacity
@@ -443,7 +332,7 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
                 onPress={onOpenPlaceDetail}
                 activeOpacity={0.8}
               >
-                <Text style={styles.menuPlaceBtnText}>Lihat Menu di Tempat</Text>
+                <Text style={styles.menuPlaceBtnText}>Lihat Semua Menu</Text>
               </TouchableOpacity>
             </View>
 
@@ -487,12 +376,12 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
                       <View style={styles.menuTopLine}>
                         <Text style={styles.menuName}>{item.name}</Text>
                         <Text style={styles.menuPrice}>{formattedPrice}</Text>
-                        <View style={styles.menuStarGroup}>
-                          {renderStars(itemRating)}
-                          <Text style={styles.menuRatingNumber}>
-                            {itemRating.toFixed(1)}
-                          </Text>
-                        </View>
+                      </View>
+                      <View style={styles.menuStarGroup}>
+                        {renderStars(itemRating)}
+                        <Text style={styles.menuRatingNumber}>
+                          {itemRating.toFixed(1)}
+                        </Text>
                       </View>
 
                       <Text style={styles.menuDesc} numberOfLines={2}>
@@ -507,7 +396,125 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
             </View>
           </View>
 
-          {/* Bottom Meta Cards Row */}
+          {/* 2. Tanggal Kunjungan (Redesign Rapi) */}
+          <View style={styles.visitDateCard}>
+            <View style={styles.visitDateIconWrapper}>
+              <Calendar size={20} color="#D04A1E" />
+            </View>
+            <View style={styles.visitDateInfo}>
+              <Text style={styles.visitDateSub}>TANGGAL KUNJUNGAN</Text>
+              <Text style={styles.visitDateMain}>{visitDateLabel}</Text>
+            </View>
+            <View style={styles.visitStatusBadge}>
+              <CheckCircle2 size={13} color="#2E7D32" />
+              <Text style={styles.visitStatusText}>Tercatat</Text>
+            </View>
+          </View>
+
+          {/* 3. Tag Jurnal (Redesign Rapi) */}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeaderRow}>
+              <View style={styles.sectionIconCircle}>
+                <TagIcon size={13} color="#FFFFFF" />
+              </View>
+              <Text style={styles.sectionTitle}>Tag Jurnal</Text>
+            </View>
+
+            <View style={styles.tagsContainer}>
+              {tags.map((tag, idx) => (
+                <View
+                  key={idx}
+                  style={[
+                    styles.tagBadge,
+                    idx === 0 && styles.tagBadgeFirst,
+                  ]}
+                >
+                  <Text style={[styles.tagHash, idx === 0 && styles.tagHashFirst]}>#</Text>
+                  <Text
+                    style={[
+                      styles.tagBadgeText,
+                      idx === 0 && styles.tagBadgeTextFirst,
+                    ]}
+                  >
+                    {tag}
+                  </Text>
+                </View>
+              ))}
+
+              <TouchableOpacity
+                style={styles.tagBadgeAdd}
+                onPress={() =>
+                  Alert.alert('Tambah Tag', 'Ketikkan tag baru untuk jurnal ini.')
+                }
+              >
+                <Plus size={13} color="#D04A1E" />
+                <Text style={styles.tagBadgeAddText}>Tambah Tag</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* 4. Rating Pengalaman Card (4 Columns) */}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeaderRow}>
+              <View style={styles.sectionIconCircle}>
+                <Star size={13} color="#FFFFFF" fill="#FFFFFF" />
+              </View>
+              <Text style={styles.sectionTitle}>Rating Pengalaman</Text>
+            </View>
+
+            <View style={styles.criteriaRow}>
+              <View style={styles.criteriaCol}>
+                <Text style={styles.criteriaLabel}>Rasa</Text>
+                {renderStars(criteria.taste)}
+                <Text style={styles.criteriaScore}>{criteria.taste.toFixed(1)}</Text>
+              </View>
+
+              <View style={styles.criteriaCol}>
+                <Text style={styles.criteriaLabel}>Suasana</Text>
+                {renderStars(criteria.ambiance)}
+                <Text style={styles.criteriaScore}>{criteria.ambiance.toFixed(1)}</Text>
+              </View>
+
+              <View style={styles.criteriaCol}>
+                <Text style={styles.criteriaLabel}>Pelayanan</Text>
+                {renderStars(criteria.service)}
+                <Text style={styles.criteriaScore}>{criteria.service.toFixed(1)}</Text>
+              </View>
+
+              <View style={styles.criteriaCol}>
+                <Text style={styles.criteriaLabel}>Value for Money</Text>
+                {renderStars(criteria.price)}
+                <Text style={styles.criteriaScore}>{criteria.price.toFixed(1)}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* 5. Catatan / Review Card */}
+          <View style={styles.sectionCard}>
+            <View style={styles.reviewHeaderRow}>
+              <View style={styles.reviewHeaderLeft}>
+                <View style={styles.sectionIconCircle}>
+                  <MessageSquare size={13} color="#FFFFFF" />
+                </View>
+                <Text style={styles.sectionTitle}>Catatan / Review</Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.editReviewBtn}
+                onPress={() => journal && onEdit && onEdit(journal)}
+                activeOpacity={0.8}
+              >
+                <Pencil size={11} color="#4E2E21" />
+                <Text style={styles.editReviewBtnText}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.reviewBodyBox}>
+              <Text style={styles.reviewBodyText}>{reviewText}</Text>
+            </View>
+          </View>
+
+          {/* 6. Bottom Meta Cards Row */}
           <View style={styles.metaCardsRow}>
             {/* Visibility */}
             <View style={styles.metaSmallCard}>
@@ -580,8 +587,8 @@ const styles = StyleSheet.create({
   heroContainer: {
     position: 'relative',
     width: '100%',
-    height: 270,
-    backgroundColor: '#3E2723',
+    height: 350,
+    backgroundColor: '#2A1810',
   },
   heroImageTouch: {
     width: '100%',
@@ -592,6 +599,14 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
+  heroScrimOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(25, 12, 6, 0.45)',
+  },
   topBar: {
     position: 'absolute',
     top: 14,
@@ -600,6 +615,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    zIndex: 10,
   },
   topRightBtns: {
     flexDirection: 'row',
@@ -621,8 +637,8 @@ const styles = StyleSheet.create({
   },
   photoCountBadge: {
     position: 'absolute',
-    bottom: 12,
-    right: 14,
+    top: 60,
+    right: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
@@ -630,18 +646,139 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 12,
+    zIndex: 10,
   },
   photoCountText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: theme.fonts.medium,
+  },
+  heroBottomLayer: {
+    position: 'absolute',
+    bottom: 14,
+    left: 16,
+    right: 16,
+    gap: 6,
+    zIndex: 10,
+  },
+  heroBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  heroCategoryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  heroCategoryText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: theme.fonts.medium,
+  },
+  heroRatingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  heroRatingText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontFamily: theme.fonts.bold,
+  },
+  heroVotesText: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.75)',
+  },
+  heroTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  heroPlaceName: {
+    fontFamily: theme.fonts.serifBold,
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    flex: 1,
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  heroAddressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  heroAddressText: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.92)',
+    flex: 1,
+    fontFamily: theme.fonts.regular,
+  },
+  heroActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  heroRouteBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#D04A1E',
+    paddingVertical: 8,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  heroRouteBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontFamily: theme.fonts.bold,
+  },
+  heroShareBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  heroShareBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontFamily: theme.fonts.bold,
   },
   thumbStripContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     gap: 8,
     marginTop: 10,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   thumbWrapper: {
     flex: 1,
@@ -676,141 +813,61 @@ const styles = StyleSheet.create({
   },
   bodyContainer: {
     paddingHorizontal: 16,
-    marginTop: 10,
+    marginTop: 8,
     gap: 12,
   },
-  venueCard: {
+  visitDateCard: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    backgroundColor: '#FAF5EE',
     borderRadius: 16,
-    padding: 12,
-    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#EFE7DE',
-    ...theme.shadows.card,
+    borderColor: '#EFE3D3',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 12,
   },
-  venueThumb: {
-    width: 78,
-    height: 60,
-    borderRadius: 10,
-    resizeMode: 'cover',
-  },
-  venueInfo: {
-    flex: 1,
-    marginLeft: 12,
-    marginRight: 6,
-  },
-  venueName: {
-    fontFamily: theme.fonts.serifBold,
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#4E2E21',
-  },
-  venueAddressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 3,
-  },
-  venueAddress: {
-    fontSize: 11,
-    color: '#7A675B',
-    flex: 1,
-  },
-  venueMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-    gap: 8,
-  },
-  categoryPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FBF3EB',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  categoryPillText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6B3F2E',
-  },
-  ratingGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  starRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingNumber: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#4E2E21',
-    marginLeft: 2,
-  },
-  ratingVotes: {
-    fontSize: 10,
-    color: '#9E8579',
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  actionPill: {
-    flex: 1,
-    flexDirection: 'row',
+  visitDateIconWrapper: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#FFF2EB',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    backgroundColor: '#FDF8F3',
-    paddingVertical: 9,
-    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#F0E5D8',
-  },
-  actionPillActive: {
-    backgroundColor: '#FFF2EB',
     borderColor: '#F7C9B2',
   },
-  actionPillText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#4E2E21',
-  },
-  visitInfoCard: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#EFE7DE',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    ...theme.shadows.card,
-  },
-  visitCol: {
+  visitDateInfo: {
     flex: 1,
-    alignItems: 'center',
   },
-  visitColLabel: {
+  visitDateSub: {
     fontSize: 10,
+    letterSpacing: 0.8,
+    fontWeight: '700',
     color: '#8C7A70',
-    marginTop: 4,
+    fontFamily: theme.fonts.bold,
   },
-  visitColValue: {
-    fontSize: 12,
+  visitDateMain: {
+    fontSize: 13,
     fontWeight: '700',
     color: '#4E2E21',
     marginTop: 2,
+    fontFamily: theme.fonts.bold,
   },
-  verticalDivider: {
-    width: 1,
-    height: 36,
-    backgroundColor: '#F0E8DE',
+  visitStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  visitStatusText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#2E7D32',
+    fontFamily: theme.fonts.medium,
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -819,40 +876,54 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tagBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 20,
+    backgroundColor: '#FAF5EE',
+    borderWidth: 1,
+    borderColor: '#EFE3D3',
   },
-  tagBadgeActive: {
+  tagBadgeFirst: {
     backgroundColor: '#4E2E21',
+    borderColor: '#4E2E21',
   },
-  tagBadgeNormal: {
-    backgroundColor: '#F8F1EB',
+  tagHash: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#D04A1E',
+    marginRight: 3,
+  },
+  tagHashFirst: {
+    color: '#FFB199',
   },
   tagBadgeText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#6B3F2E',
+    fontFamily: theme.fonts.medium,
   },
-  tagBadgeTextActive: {
+  tagBadgeTextFirst: {
     color: '#FFFFFF',
   },
   tagBadgeAdd: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E6D7C8',
+    borderColor: '#D04A1E',
     borderStyle: 'dashed',
-    backgroundColor: '#FAF5EE',
+    backgroundColor: '#FFF8F5',
   },
   tagBadgeAddText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B3F2E',
+    color: '#D04A1E',
+    fontFamily: theme.fonts.medium,
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
@@ -882,6 +953,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#4E2E21',
   },
+  sectionSubtitle: {
+    fontSize: 10,
+    color: '#8C7A70',
+    marginTop: 1,
+    fontFamily: theme.fonts.regular,
+  },
   criteriaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -896,12 +973,14 @@ const styles = StyleSheet.create({
     color: '#7A675B',
     marginBottom: 4,
     textAlign: 'center',
+    fontFamily: theme.fonts.regular,
   },
   criteriaScore: {
     fontSize: 12,
     fontWeight: '800',
     color: '#4E2E21',
     marginTop: 4,
+    fontFamily: theme.fonts.bold,
   },
   reviewHeaderRow: {
     flexDirection: 'row',
@@ -927,6 +1006,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#4E2E21',
+    fontFamily: theme.fonts.bold,
   },
   reviewBodyBox: {
     backgroundColor: '#FBF7F2',
@@ -939,6 +1019,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#4E2E21',
     lineHeight: 19,
+    fontFamily: theme.fonts.regular,
   },
   menuHeaderRow: {
     flexDirection: 'row',
@@ -956,6 +1037,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#6B3F2E',
+    fontFamily: theme.fonts.bold,
   },
   menuList: {
     gap: 10,
@@ -990,27 +1072,35 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#4E2E21',
+    fontFamily: theme.fonts.bold,
   },
   menuPrice: {
     fontSize: 12,
     color: '#7A675B',
+    fontFamily: theme.fonts.regular,
   },
   menuStarGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     marginLeft: 'auto',
   },
+  starRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   menuRatingNumber: {
     fontSize: 11,
     fontWeight: '700',
     color: '#4E2E21',
     marginLeft: 3,
+    fontFamily: theme.fonts.bold,
   },
   menuDesc: {
     fontSize: 11,
     color: '#8C7A70',
     marginTop: 4,
     lineHeight: 15,
+    fontFamily: theme.fonts.regular,
   },
   metaCardsRow: {
     flexDirection: 'row',
@@ -1043,12 +1133,14 @@ const styles = StyleSheet.create({
   metaSmallLabel: {
     fontSize: 9,
     color: '#8C7A70',
+    fontFamily: theme.fonts.regular,
   },
   metaSmallValue: {
     fontSize: 11,
     fontWeight: '700',
     color: '#4E2E21',
     marginTop: 1,
+    fontFamily: theme.fonts.bold,
   },
   metaPublicRow: {
     flexDirection: 'row',

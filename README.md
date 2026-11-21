@@ -26,7 +26,7 @@ npm run type-check
 # 2. Linter Expo / ESLint (0 error, 0 warning)
 npx expo lint
 
-# 3. Unit tests (93 tests passing across 17 suites)
+# 3. Unit tests (100 tests passing across 20 suites)
 npm test
 
 # 4. Firebase Emulator Integration Tests (69 tests passing across 11 suites)
@@ -123,13 +123,15 @@ EXPO_PUBLIC_OSM_USER_AGENT=MouthJournal/1.0.0 (Expo app)
 
 ## 🧪 Rangkaian Pengujian Otomatis
 
-Proyek memiliki total **162 tes otomatis** yang terbagi dalam dua kelompok:
-1. **Unit Tests (`npm test`)** — 93 tes:
+Proyek memiliki total **169 tes otomatis** yang terbagi dalam dua kelompok:
+1. **Unit Tests (`npm test`)** — 100 tes:
    - Kontrak draft form jurnal (`buildJournalDraft`)
    - Resolusi mode aplikasi (Firebase, Demo, Unconfigured)
    - Sanitasi dan validasi cache offline
    - Adapter OpenStreetMap (Overpass & Nominatim) dengan error handling
    - Antrian foto offline (`PhotoUploadQueue`)
+   - Resolusi tema dinamis (`theme.test.ts`)
+   - Agregasi data riil profil pengguna (`profileAggregation.test.ts`)
    - Skema Zod (Journal, MenuItem, Wishlist, Preferences, Profile)
    - Kalkulasi statistik murni (tanpa angka placeholder)
    - Ekspor data JSON terisolasi

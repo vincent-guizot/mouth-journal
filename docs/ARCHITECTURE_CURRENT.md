@@ -10,6 +10,7 @@
 - Root Layout (`app/_layout.tsx`):
   - Inisialisasi Google Fonts (Caveat, Manrope)
   - `SafeAreaProvider`
+  - `ThemeProvider` (resolusi mode light, dark, dan system dengan persistensi lokal)
   - `AuthProvider`
   - `FeedbackProvider` (dialog modal & toast floating lintas platform)
 
@@ -81,6 +82,25 @@ Aplikasi mendukung 3 mode yang divalidasi saat startup (`src/config/env.ts`):
 
 ---
 
-## 7. Rangkaian Pengujian
-- **Unit Tests**: `npm test` (93 pengujian lolos).
+## 7. Sistem Tema Dinamis (`ThemeContext`)
+- Mendukung tiga mode tampilan:
+  - `light`: Warm Café palette (Coffee brown, terracotta, cream).
+  - `dark`: Espresso Night palette kontras tinggi.
+  - `system`: Otomatis mengikuti `useColorScheme()` perangkat pengguna.
+- Tersinkronisasi dengan preferensi pengguna di Firestore (`appearance`) dan disimpan lokal via AsyncStorage.
+- StatusBar dan container navigasi beradaptasi otomatis.
+
+---
+
+## 8. Agregasi Data Nyata Profil Pengguna
+- Tidak menggunakan data mock atau placeholder di profil.
+- **Tab Tempat**: Mengagregasi tempat unik yang dikunjungi dari jurnal pengguna berdasarkan `placeId`, menghitung frekuensi kunjungan, rating rata-rata, dan kunjungan terakhir.
+- **Tab Menu**: Merangkum seluruh hidangan yang pernah dinilai dalam jurnal pengguna beserta harga, rating bintang, dan rekomendasi.
+- **Tab Wishlist**: Terhubung langsung ke `IWishlistRepository` pengguna.
+- Seluruh counter tab bersifat dinamis sesuai data aktual.
+
+---
+
+## 9. Rangkaian Pengujian
+- **Unit Tests**: `npm test` (100 pengujian lolos di 20 test suites).
 - **Emulator Tests**: `npm run test:emulator` (69 pengujian lolos terhadap emulator Auth, Firestore, dan Storage).

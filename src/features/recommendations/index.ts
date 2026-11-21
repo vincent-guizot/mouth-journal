@@ -1,1 +1,3 @@
-export { AIRecommendationsScreen } from '../../screens/AIRecommendationsScreen';
+export * from './recommendationEngine';
+export * from './components/TasteProfileCard';
+export * from './components/RecommendationCard';

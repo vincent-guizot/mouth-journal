@@ -10,6 +10,7 @@ import { WishlistPlaceCard } from '../features/wishlist/components/WishlistPlace
 import { EmptyState } from '../components/feedback/EmptyState';
 import { ErrorState } from '../components/feedback/ErrorState';
 import { LoadingState } from '../components/feedback/LoadingState';
+import { DecorativeAssets } from '../config/assets';
 import { Heart, UtensilsCrossed } from 'lucide-react-native';
 import { theme } from '../config/theme';
 
@@ -57,6 +58,7 @@ export const WishlistScreen: React.FC<WishlistScreenProps> = ({
 
       {activeTab === 'menu' ? (
         <EmptyState
+          illustration={DecorativeAssets.iconFoodCloche}
           icon={<UtensilsCrossed size={34} color={theme.colors.terracotta} />}
           title="Wishlist Menu Belum Tersedia"
           subtitle="Saat ini hanya tempat yang dapat disimpan ke wishlist."
@@ -67,6 +69,7 @@ export const WishlistScreen: React.FC<WishlistScreenProps> = ({
         <ErrorState message={error} onRetry={reload} />
       ) : filteredPlaces.length === 0 ? (
         <EmptyState
+          illustration={DecorativeAssets.flourishHeartRadiant}
           icon={<Heart size={34} color={theme.colors.terracotta} />}
           title={searchQuery ? 'Tidak Ada Hasil' : 'Wishlist Masih Kosong'}
           subtitle={searchQuery ? 'Coba kata kunci lain.' : 'Simpan tempat dari Explore yang ingin kamu coba nanti.'}

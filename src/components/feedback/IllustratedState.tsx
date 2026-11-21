@@ -1,12 +1,13 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, Image, StyleSheet, ViewStyle, ImageSourcePropType } from 'react-native';
 import { DecorativeAssets } from '../../config/assets';
 import { theme } from '../../config/theme';
 
 export type IllustratedStateTone = 'neutral' | 'warning' | 'success';
 
 interface IllustratedStateProps {
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
+  illustration?: ImageSourcePropType;
   title?: string;
   subtitle?: string;
   tone?: IllustratedStateTone;
@@ -16,12 +17,13 @@ interface IllustratedStateProps {
 }
 
 /**
- * Bingkai ilustrasi bulat warm (blob + ray accent) di belakang ikon,
+ * Bingkai ilustrasi bulat warm (blob + ray accent) di belakang ikon atau aset stiker,
  * dipakai di semua state kosong/sukses/error agar konsisten dengan
  * gaya "sticker sheet" (loading, empty, error, success, dll).
  */
 export const IllustratedState: React.FC<IllustratedStateProps> = ({
   icon,
+  illustration,
   title,
   subtitle,
   tone = 'neutral',
@@ -44,7 +46,17 @@ export const IllustratedState: React.FC<IllustratedStateProps> = ({
           style={styles.blobImage}
           resizeMode="contain"
         />
-        <View style={styles.iconCenter}>{icon}</View>
+        <View style={styles.iconCenter}>
+          {illustration ? (
+            <Image
+              source={illustration}
+              style={{ width: size * 0.55, height: size * 0.55 }}
+              resizeMode="contain"
+            />
+          ) : (
+            icon
+          )}
+        </View>
       </View>
       {title ? <Text style={styles.title}>{title}</Text> : null}
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}

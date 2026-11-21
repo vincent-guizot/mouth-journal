@@ -523,7 +523,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {/* Envelope Illustration from Assets */}
             <View style={styles.illustrationCenterBox}>
               <Image
-                source={IllustrationAssets.envelopeDefault}
+                source={IllustrationAssets.envelopeResetLink}
                 style={{ width: 140, height: 140, resizeMode: 'contain', marginBottom: 8 }}
               />
               <Text style={styles.illustrationCaption}>

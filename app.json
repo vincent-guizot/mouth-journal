@@ -6,6 +6,11 @@
     "orientation": "portrait",
     "icon": "./assets/icon-android.png",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F8EAD9"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mouthjournal.app",

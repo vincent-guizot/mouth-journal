@@ -94,4 +94,20 @@ export const SplashMasterAssets = {
   heroCulinary: require('../../assets/splash-hero-culinary.jpg'),
   journalCollage: require('../../assets/onboarding_journal_collage.png'),
   wishlistCard: require('../../assets/onboarding_wishlist_card.png'),
+  splashIcon: require('../../assets/splash-icon.png'),
 };
+
+export const BrandMasterAssets = {
+  logo: require('../../assets/Logo.png'),
+  icon: require('../../assets/icon.png'),
+  iconAndroid: require('../../assets/icon-android.png'),
+  splashIcon: require('../../assets/splash-icon.png'),
+  brandGuide: require('../../assets/brand/brand-guide.jpg'),
+  identityBoard: require('../../assets/brand/MouthJournal Brand Identity Board.png'),
+  logoWarmTones: require('../../assets/brand/MouthJournal Logo in Warm Tones.png'),
+};
+
+export const FoodImageryAssets = {
+  steakAndLatte: require('../../assets/food-imagery/Cozy Café Steak and Steaming Latte.png'),
+};
+

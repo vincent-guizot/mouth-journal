@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Settings, Camera, Pencil } from 'lucide-react-native';
 import { UserProfile } from '../../../services/firebase/authService';
 import { theme } from '../../../config/theme';
+import { DecorativeAssets } from '../../../config/assets';
 
 interface ProfileHeroHeaderProps {
   user: UserProfile;
@@ -20,7 +21,14 @@ export const ProfileHeroHeader: React.FC<ProfileHeroHeaderProps> = ({
       {/* 1. Header Row */}
       <View style={styles.header}>
         <View style={styles.headerTitleGroup}>
-          <Text style={styles.headerTitle}>Profile</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={styles.headerTitle}>Profile</Text>
+            <Image
+              source={DecorativeAssets.botanicalRussetBranch}
+              style={{ width: 18, height: 18 }}
+              resizeMode="contain"
+            />
+          </View>
           <Text style={styles.headerSubtitle}>Catatan perjalanan kulinerku</Text>
         </View>
 

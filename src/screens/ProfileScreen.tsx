@@ -12,6 +12,7 @@ import { ProfilePlaceItem } from '../features/profile/components/ProfilePlaceIte
 import { ProfileDishItem } from '../features/profile/components/ProfileDishItem';
 import { ProfileWishlistItem } from '../features/profile/components/ProfileWishlistItem';
 import { EmptyState } from '../components/feedback/EmptyState';
+import { DecorativeAssets } from '../config/assets';
 import { BookOpen, MapPin, Utensils, Heart } from 'lucide-react-native';
 
 export interface ProfileScreenProps {
@@ -82,6 +83,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         ) : activeTab === 'jurnal' ? (
           userDiaries.length === 0 ? (
             <EmptyState
+              illustration={DecorativeAssets.iconForkSpoon}
               icon={<BookOpen size={32} color={theme.colors.terracotta} />}
               title="Belum Ada Jurnal"
               subtitle="Mulai catat pengalaman kuliner pertamamu hari ini."
@@ -98,6 +100,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         ) : activeTab === 'tempat' ? (
           visitedPlaces.length === 0 ? (
             <EmptyState
+              illustration={DecorativeAssets.iconCoffeeCup}
               icon={<MapPin size={32} color={theme.colors.terracotta} />}
               title="Belum Ada Tempat Dikunjungi"
               subtitle="Tempat kuliner yang kamu beri ulasan akan otomatis terkumpul di sini."
@@ -121,6 +124,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         ) : activeTab === 'menu' ? (
           dishes.length === 0 ? (
             <EmptyState
+              illustration={DecorativeAssets.iconCroissant}
               icon={<Utensils size={32} color={theme.colors.terracotta} />}
               title="Belum Ada Menu Dicatat"
               subtitle="Hidangan yang kamu ulas di dalam jurnal akan dirangkum di sini."
@@ -144,6 +148,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         ) : activeTab === 'wishlist' ? (
           wishlistItems.length === 0 ? (
             <EmptyState
+              illustration={DecorativeAssets.flourishHeartRadiant}
               icon={<Heart size={32} color={theme.colors.terracotta} />}
               title="Wishlist Masih Kosong"
               subtitle="Simpan tempat dari Explore yang ingin kamu kunjungi nanti."

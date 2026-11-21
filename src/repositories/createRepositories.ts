@@ -1,5 +1,6 @@
 import { FirestoreJournalRepository } from './journals/FirestoreJournalRepository';
 import { FirestoreWishlistRepository } from './wishlist/FirestoreWishlistRepository';
+import { FirestoreMenuWishlistRepository } from './menu-wishlist/FirestoreMenuWishlistRepository';
 import { FirestoreUserPreferencesRepository } from './user-preferences/FirestoreUserPreferencesRepository';
 import { FirestoreUserProfileRepository } from './user-profile/FirestoreUserProfileRepository';
 import { RepositoryDeps } from './sync/types';
@@ -8,6 +9,7 @@ import { RepositoryDeps } from './sync/types';
 export const createRepositoryBundle = (deps: RepositoryDeps) => ({
   journalRepository: new FirestoreJournalRepository(deps),
   wishlistRepository: new FirestoreWishlistRepository(deps),
+  menuWishlistRepository: new FirestoreMenuWishlistRepository(deps),
   userPreferencesRepository: new FirestoreUserPreferencesRepository(deps),
   userProfileRepository: new FirestoreUserProfileRepository(deps),
 });

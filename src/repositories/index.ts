@@ -6,6 +6,8 @@ export * from './journals/IJournalRepository';
 export * from './journals/FirestoreJournalRepository';
 export * from './wishlist/IWishlistRepository';
 export * from './wishlist/FirestoreWishlistRepository';
+export * from './menu-wishlist/IMenuWishlistRepository';
+export * from './menu-wishlist/FirestoreMenuWishlistRepository';
 export * from './user-preferences/IUserPreferencesRepository';
 export * from './user-preferences/FirestoreUserPreferencesRepository';
 export * from './user-profile/IUserProfileRepository';
@@ -22,5 +24,6 @@ export const repositories = createRepositoryBundle({ mode: appMode, db, storage,
 
 export const journalRepository = repositories.journalRepository;
 export const wishlistRepository = repositories.wishlistRepository;
+export const menuWishlistRepository = repositories.menuWishlistRepository;
 export const userPreferencesRepository = repositories.userPreferencesRepository;
 export const userProfileRepository = repositories.userProfileRepository;

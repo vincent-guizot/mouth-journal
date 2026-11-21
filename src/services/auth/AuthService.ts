@@ -402,7 +402,7 @@ export class AuthService {
     const { db, storage } = this.deps;
     if (!db || !storage) throw new BackendNotConfiguredError();
     let firestoreDocumentsDeleted = 0;
-    for (const sub of ['journals', 'wishlist', 'preferences']) {
+    for (const sub of ['journals', 'wishlist', 'menuWishlist', 'preferences']) {
       const snap = await getDocs(collection(db, 'users', uid, sub));
       const docs = snap.docs;
       for (let i = 0; i < docs.length; i += 400) {

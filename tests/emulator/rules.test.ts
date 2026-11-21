@@ -64,6 +64,18 @@ const wish = (uid: string, placeId: string, overrides: Record<string, unknown> =
   ...overrides,
 });
 
+const menuWish = (uid: string, id: string, overrides: Record<string, unknown> = {}) => ({
+  id,
+  userId: uid,
+  placeId: 'osm-way-7',
+  placeName: 'Bakery',
+  menuName: 'Croissant Almond',
+  category: 'food',
+  estimatedPrice: 35000,
+  createdAt: now,
+  ...overrides,
+});
+
 const settings = (overrides: Record<string, unknown> = {}) => ({
   appearance: 'light',
   searchRadiusKm: 5,
@@ -244,6 +256,16 @@ describe('Firestore rules: wishlist, preferences, profile', () => {
     await assertFails(
       setDoc(doc(alice().firestore(), 'users', ALICE), { uid: ALICE, email: 'alice@example.test', displayName: 'A', createdAt: '2020-01-01T00:00:00.000Z' })
     );
+  });
+
+  test('menuWishlist: valid item succeeds, invalid price/empty name or foreign user fails', async () => {
+    const db = alice().firestore();
+    await assertSucceeds(setDoc(doc(db, 'users', ALICE, 'menuWishlist', 'mw-1'), menuWish(ALICE, 'mw-1')));
+    await assertFails(setDoc(doc(db, 'users', ALICE, 'menuWishlist', 'mw-2'), menuWish(BOB, 'mw-2')));
+    await assertFails(setDoc(doc(db, 'users', ALICE, 'menuWishlist', 'mw-3'), menuWish(ALICE, 'mw-3', { estimatedPrice: -500 })));
+    await assertFails(setDoc(doc(db, 'users', ALICE, 'menuWishlist', 'mw-4'), menuWish(ALICE, 'mw-4', { menuName: '' })));
+    await assertFails(setDoc(doc(db, 'users', ALICE, 'menuWishlist', 'mw-5'), menuWish(ALICE, 'mw-5', { category: 'invalid-cat' })));
+    await assertSucceeds(deleteDoc(doc(db, 'users', ALICE, 'menuWishlist', 'mw-1')));
   });
 });
 

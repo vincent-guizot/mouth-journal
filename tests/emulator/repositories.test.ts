@@ -247,6 +247,56 @@ describe('Wishlist repository', () => {
   });
 });
 
+describe('Menu Wishlist repository', () => {
+  test('addMenuWishlist round-trips to Firestore, is queryable, and removable', async () => {
+    const { menuWishlistRepository } = bundle();
+    const created = await menuWishlistRepository.addMenuWishlist(uid, {
+      placeId: 'osm-way-99',
+      placeName: 'Kopi & Roti',
+      menuName: 'Espresso Romano',
+      category: 'drink',
+      estimatedPrice: 32000,
+      notes: 'Harus coba varian lemon zest',
+    });
+    assert.equal(created.sync, 'synced');
+    assert.ok(created.data.id.startsWith('mw-'));
+    assert.equal(created.data.userId, uid);
+    assert.equal(created.data.menuName, 'Espresso Romano');
+    assert.ok((await serverDoc('users', uid, 'menuWishlist', created.data.id)).exists());
+
+    const list = await menuWishlistRepository.getMenuWishlist(uid);
+    assert.ok(list.some((m) => m.id === created.data.id));
+
+    const removed = await menuWishlistRepository.removeMenuWishlist(uid, created.data.id);
+    assert.equal(removed.sync, 'synced');
+    assert.equal((await serverDoc('users', uid, 'menuWishlist', created.data.id)).exists(), false);
+  });
+
+  test('offline add is pending and synced later', async () => {
+    const { menuWishlistRepository } = bundle();
+    await disableNetwork(client.db);
+    let sync: string;
+    let createdId: string;
+    try {
+      const res = await menuWishlistRepository.addMenuWishlist(uid, {
+        placeId: 'osm-way-100',
+        placeName: 'Kedai Mie',
+        menuName: 'Mie Ayam Jamur',
+        estimatedPrice: 28000,
+      });
+      sync = res.sync;
+      createdId = res.data.id;
+      const list = await menuWishlistRepository.getMenuWishlist(uid);
+      assert.ok(list.some((m) => m.id === createdId));
+    } finally {
+      await enableNetwork(client.db);
+    }
+    assert.equal(sync, 'pending');
+    assert.equal((await syncUntilEmpty(() => menuWishlistRepository.syncPending(uid))).pending, 0);
+    assert.ok((await serverDoc('users', uid, 'menuWishlist', createdId)).exists());
+  });
+});
+
 describe('Profile and preferences repositories', () => {
   test('profile save/get/update with Firestore rules (email = auth email)', async () => {
     const { userProfileRepository } = bundle();

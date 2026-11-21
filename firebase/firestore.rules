@@ -196,6 +196,32 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      // ---------------------------------------------------------- menuWishlist
+      function validMenuWishlist(itemId) {
+        let d = incoming();
+        return d.keys().hasAll(['id', 'userId', 'placeId', 'placeName', 'menuName', 'createdAt'])
+          && d.keys().hasOnly(['id', 'userId', 'placeId', 'placeName', 'menuName', 'category', 'estimatedPrice', 'notes', 'photoUrl', 'createdAt'])
+          && d.id == itemId
+          && isSafeId(itemId)
+          && isSafeId(d.placeId)
+          && d.userId == userId
+          && isShortString(d.placeName, 1, 200)
+          && isShortString(d.menuName, 1, 120)
+          && (!('category' in d) || d.category in ['food', 'drink', 'dessert', 'snack'])
+          && (!('estimatedPrice' in d) || (d.estimatedPrice is int && d.estimatedPrice >= 0 && d.estimatedPrice <= 100000000))
+          && optString(d, 'notes', 500)
+          && (!('photoUrl' in d) || (d.photoUrl is string && d.photoUrl.matches('^https://.+')))
+          && isIsoDate(d.createdAt);
+      }
+
+      match /menuWishlist/{itemId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && validMenuWishlist(itemId);
+        allow update: if isOwner(userId) && validMenuWishlist(itemId)
+          && incoming().createdAt == resource.data.createdAt;
+        allow delete: if isOwner(userId);
+      }
+
       // ---------------------------------------------------------- preferences
       function validSettings() {
         let d = incoming();

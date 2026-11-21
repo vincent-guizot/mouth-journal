@@ -123,6 +123,15 @@ export const darkTheme = {
 
 export type ThemeType = typeof theme;
 
+export function resolveIsDark(
+  mode: 'light' | 'dark' | 'system' = 'light',
+  systemColorScheme?: 'light' | 'dark' | null
+): boolean {
+  if (mode === 'dark') return true;
+  if (mode === 'system') return systemColorScheme === 'dark';
+  return false;
+}
+
 export function getTheme(mode: 'light' | 'dark' | 'system' = 'light', isSystemDark: boolean = false): ThemeType {
   if (mode === 'dark') return darkTheme;
   if (mode === 'system' && isSystemDark) return darkTheme;

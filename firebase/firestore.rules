@@ -40,6 +40,51 @@ service cloud.firestore {
       return v in ['food', 'drinks', 'wisata'];
     }
 
+    function isHttpsUrl(v) {
+      return v is string && v.matches('^https://.+');
+    }
+
+    function validPhotoUrls(urls) {
+      return urls is list && urls.size() <= 10
+        && (urls.size() < 1 || isHttpsUrl(urls[0]))
+        && (urls.size() < 2 || isHttpsUrl(urls[1]))
+        && (urls.size() < 3 || isHttpsUrl(urls[2]));
+    }
+
+    function validMenuItem(m) {
+      return m is map
+        && m.keys().hasAll(['id', 'name', 'price'])
+        && m.keys().hasOnly(['id', 'name', 'price', 'category', 'rating', 'isRecommended', 'photoUrl', 'notes'])
+        && isSafeId(m.id)
+        && isShortString(m.name, 1, 120)
+        && m.price is int && m.price >= 0 && m.price <= 100000000
+        && (!('rating' in m) || isStar(m.rating))
+        && (!('photoUrl' in m) || isHttpsUrl(m.photoUrl))
+        && (!('category' in m) || m.category in ['food', 'drink', 'dessert', 'snack'])
+        && (!('isRecommended' in m) || m.isRecommended is bool)
+        && optString(m, 'notes', 500);
+    }
+
+    function validMenuItems(items) {
+      return items is list && items.size() <= 50
+        && (items.size() < 1 || validMenuItem(items[0]))
+        && (items.size() < 2 || validMenuItem(items[1]))
+        && (items.size() < 3 || validMenuItem(items[2]));
+    }
+
+    function validTag(t) {
+      return isShortString(t, 1, 40);
+    }
+
+    function validTags(tags) {
+      return tags is list && tags.size() <= 20
+        && (tags.size() < 1 || validTag(tags[0]))
+        && (tags.size() < 2 || validTag(tags[1]))
+        && (tags.size() < 3 || validTag(tags[2]))
+        && (tags.size() < 4 || validTag(tags[3]))
+        && (tags.size() < 5 || validTag(tags[4]));
+    }
+
     // Absent optional fields are allowed; present ones must have the right type.
     function optString(data, key, max) {
       return !(key in data) || isShortString(data[key], 0, max);
@@ -91,18 +136,17 @@ service cloud.firestore {
           && isShortString(d.subCategory, 1, 60)
           && isShortString(d.subCategoryLabel, 1, 60)
           && ((d.latitude == null && d.longitude == null) || (isLat(d.latitude) && isLng(d.longitude)))
-          && d.photoUrls is list && d.photoUrls.size() <= 10
-          && (d.photoUrls.size() == 0 || (d.photoUrls[0] is string && d.photoUrls[0].matches('^https://.+')))
+          && validPhotoUrls(d.photoUrls)
           && c is map
           && c.keys().hasOnly(['taste', 'ambiance', 'service', 'price'])
           // `service` is a reserved word in the rules language, hence bracket access.
           && isStar(c['taste']) && isStar(c['ambiance']) && isStar(c['service']) && isStar(c['price'])
           && d.overallRating is number
           && d.overallRating == math.round((c['taste'] + c['ambiance'] + c['service'] + c['price']) * 10.0 / 4.0) / 10.0
-          && d.menuItems is list && d.menuItems.size() <= 50
+          && validMenuItems(d.menuItems)
           && d.totalSpent is int && d.totalSpent >= 0
           && isShortString(d.reviewText, 0, 1000)
-          && d.tags is list && d.tags.size() <= 20
+          && validTags(d.tags)
           && isIsoDate(d.visitedAt)
           && isIsoDate(d.createdAt)
           && (!('updatedAt' in d) || isIsoDate(d.updatedAt))
@@ -117,7 +161,8 @@ service cloud.firestore {
         allow update: if isOwner(userId) && validJournal(journalId)
           && incoming().createdAt == resource.data.createdAt
           && incoming().userId == resource.data.userId
-          && (('updatedAt' in incoming() && isIsoDate(incoming().updatedAt)) || incoming() == resource.data);
+          && (('updatedAt' in incoming() && isIsoDate(incoming().updatedAt))
+              || (!('updatedAt' in incoming()) && incoming() == resource.data));
         allow delete: if isOwner(userId);
       }
 

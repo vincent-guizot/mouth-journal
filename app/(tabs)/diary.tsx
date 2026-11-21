@@ -7,7 +7,7 @@ import { theme } from '../../src/config/theme';
 
 export default function DiaryTabRoute() {
   const router = useRouter();
-  const { currentUser, userLocation, isLoading } = useAuth();
+  const { currentUser, isLoading } = useAuth();
 
   if (isLoading || !currentUser) {
     return (
@@ -21,24 +21,11 @@ export default function DiaryTabRoute() {
     <View style={styles.container}>
       <DiaryScreen
         userId={currentUser.uid}
-        userLocation={userLocation}
         onJournalSelect={(journal) => {
           router.push({
             pathname: '/journals/[journalId]',
             params: { journalId: journal.id, initialData: JSON.stringify(journal) },
           });
-        }}
-        onPlaceSelect={(place) => {
-          router.push({
-            pathname: '/places/[placeId]',
-            params: { placeId: place.id, initialData: JSON.stringify(place) },
-          });
-        }}
-        onAddLog={() => {
-          router.push('/journals/create');
-        }}
-        onOpenMap={() => {
-          router.push('/(tabs)/explore');
         }}
       />
     </View>

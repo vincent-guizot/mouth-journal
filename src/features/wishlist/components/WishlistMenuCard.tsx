@@ -29,7 +29,7 @@ export const WishlistMenuCard: React.FC<WishlistMenuCardProps> = ({
         <Text style={styles.menuPlaceSubtitle}>{item.placeName}</Text>
         <Text style={styles.menuPriceTag}>{item.price}</Text>
         <Text style={styles.descriptionText} numberOfLines={2}>
-          "{item.notes}"
+          &quot;{item.notes}&quot;
         </Text>
       </View>
     </View>

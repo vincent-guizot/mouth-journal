@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Animated, StyleProp, ViewStyle } from 'react-native';
 
 interface ScreenEntranceProps {
@@ -8,8 +8,8 @@ interface ScreenEntranceProps {
 
 /** A small native entrance transition that works on iOS, Android, and web. */
 export function ScreenEntrance({ children, style }: ScreenEntranceProps) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(12)).current;
+  const [opacity] = useState(() => new Animated.Value(0));
+  const [translateY] = useState(() => new Animated.Value(12));
 
   useEffect(() => {
     Animated.parallel([

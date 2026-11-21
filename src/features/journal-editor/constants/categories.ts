@@ -5,6 +5,7 @@ import {
   Cake,
   MoreHorizontal,
 } from 'lucide-react-native';
+import { JOURNAL_CATEGORY_DEFS } from './categoryDefs';
 
 export interface CategoryItem {
   id: string;
@@ -12,13 +13,19 @@ export interface CategoryItem {
   icon: any;
 }
 
-export const JOURNAL_CATEGORIES: CategoryItem[] = [
-  { id: 'kopi', label: 'Kopi/Cafe', icon: Coffee },
-  { id: 'restoran', label: 'Restoran', icon: Utensils },
-  { id: 'street_food', label: 'Street Food', icon: Sandwich },
-  { id: 'dessert', label: 'Dessert', icon: Cake },
-  { id: 'lainnya', label: 'Lainnya', icon: MoreHorizontal },
-];
+const ICONS: Record<string, CategoryItem['icon']> = {
+  kopi: Coffee,
+  restoran: Utensils,
+  street_food: Sandwich,
+  dessert: Cake,
+  lainnya: MoreHorizontal,
+};
+
+export const JOURNAL_CATEGORIES: CategoryItem[] = JOURNAL_CATEGORY_DEFS.map((c) => ({
+  id: c.id,
+  label: c.label,
+  icon: ICONS[c.id],
+}));
 
 export const CRITERIA_CRITERIA_LIST = [
   { key: 'rasa', label: 'Rasa' },

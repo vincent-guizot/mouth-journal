@@ -50,31 +50,15 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   const [isSaving, setIsSaving] = useState(false);
 
   // Profile Header Images
-  const [bannerUrl, setBannerUrl] = useState<string>(
-    user.bannerURL ||
-      'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1200&auto=format&fit=crop&q=80'
-  );
-  const [avatarUrl, setAvatarUrl] = useState<string>(
-    user.photoURL ||
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
-  );
-
-  // Avatar Presets
-  const avatarPresets = [
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
-  ];
+  const [bannerUrl, setBannerUrl] = useState<string | undefined>(user.bannerURL);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(user.photoURL);
 
   // Basic Info (Step 1)
-  const [name, setName] = useState(user.displayName || 'Vincentia');
-  const [username, setUsername] = useState(user.username || 'vincentiaa');
-  const [email, setEmail] = useState(user.email || 'vincentia@example.com');
-  const [phone, setPhone] = useState(user.phoneNumber || '+62 812 3456 7890');
-  const [bio, setBio] = useState(
-    user.bio ||
-      'Food enthusiast & specialty coffee lover based in Jakarta. Always on the hunt for cozy aesthetic cafes with great brews.'
-  );
+  const [name, setName] = useState(user.displayName);
+  const [username, setUsername] = useState(user.username ?? '');
+  const [email, setEmail] = useState(user.email);
+  const [phone, setPhone] = useState(user.phoneNumber ?? '');
+  const [bio, setBio] = useState(user.bio ?? '');
 
   // Culinary Preferences (Step 2)
   const availableCulinaryPreferences = [
@@ -88,7 +72,7 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     '🍵 Teh & Matcha',
   ];
   const [selectedCulinary, setSelectedCulinary] = useState<string[]>(
-    user.culinaryPreferences || ['☕ Kopi', '🍰 Dessert', '🍲 Makanan Berat']
+    user.culinaryPreferences ?? []
   );
 
   // Favorite Venue Types (Step 2)
@@ -103,7 +87,7 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     '💻 WFC Friendly',
   ];
   const [selectedVenues, setSelectedVenues] = useState<string[]>(
-    user.favoriteVenueTypes || ['☕ Café', '🥐 Bakery', '💎 Hidden Gem']
+    user.favoriteVenueTypes ?? []
   );
 
   // Budget Chips
@@ -113,18 +97,16 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     'Rp 100.000 - 250.000',
     '> Rp 250.000',
   ];
-  const [selectedBudget, setSelectedBudget] = useState<string>(
-    user.budgetPerVisit || 'Rp 50.000 - 100.000'
-  );
+  const [selectedBudget, setSelectedBudget] = useState<string | undefined>(user.budgetPerVisit);
 
   // Favorite Locations
   const [locations, setLocations] = useState<string[]>(
-    user.favoriteLocations || ['Jakarta Barat', 'Jakarta Selatan']
+    user.favoriteLocations ?? []
   );
 
   // Socials
-  const [instagram, setInstagram] = useState(user.socialInstagram || 'vincentiaa');
-  const [tiktok, setTiktok] = useState(user.socialTikTok || 'vincentiaa');
+  const [instagram, setInstagram] = useState(user.socialInstagram ?? '');
+  const [tiktok, setTiktok] = useState(user.socialTikTok ?? '');
 
   // Toggle Handlers
   const toggleCulinary = (item: string) => {
@@ -147,29 +129,15 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     setLocations(locations.filter((l) => l !== loc));
   };
 
+  const [newLocation, setNewLocation] = useState('');
   const handleAddLocationPrompt = () => {
-    Alert.prompt
-      ? Alert.prompt('Tambah Lokasi Favorit', 'Masukkan nama kota atau kawasan (misal: Menteng, Senopati, PIK):', [
-          { text: 'Batal', style: 'cancel' },
-          {
-            text: 'Tambah',
-            onPress: (text) => {
-              if (text && text.trim()) {
-                setLocations([...locations, text.trim()]);
-              }
-            },
-          },
-        ])
-      : Alert.alert('Tambah Lokasi', 'Lokasi PIK ditambahkan ke favorit.', [
-          {
-            text: 'OK',
-            onPress: () => {
-              if (!locations.includes('Pantai Indah Kapuk (PIK)')) {
-                setLocations([...locations, 'Pantai Indah Kapuk (PIK)']);
-              }
-            },
-          },
-        ]);
+    const loc = newLocation.trim();
+    if (!loc) {
+      Alert.alert('Lokasi kosong', 'Ketik nama kota atau kawasan terlebih dahulu.');
+      return;
+    }
+    if (!locations.includes(loc)) setLocations([...locations, loc]);
+    setNewLocation('');
   };
 
   const handleChangeBanner = () => {
@@ -180,27 +148,6 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           const uri = await ImageService.pickImageFromGallery();
           if (uri) setBannerUrl(uri);
         },
-      },
-      {
-        text: 'Aesthetic Cafe',
-        onPress: () =>
-          setBannerUrl(
-            'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1200&auto=format&fit=crop&q=80'
-          ),
-      },
-      {
-        text: 'Artisan Bakery',
-        onPress: () =>
-          setBannerUrl(
-            'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1200&auto=format&fit=crop&q=80'
-          ),
-      },
-      {
-        text: 'Cozy Roastery',
-        onPress: () =>
-          setBannerUrl(
-            'https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=1200&auto=format&fit=crop&q=80'
-          ),
       },
       { text: 'Batal', style: 'cancel' },
     ]);
@@ -230,17 +177,17 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     const updated: Partial<UserProfile> = {
       displayName: name.trim(),
       username: username.trim() || undefined,
-      email: email.trim() || user.email,
-      phoneNumber: phone.trim(),
-      bio: bio.trim(),
+      email: email.trim(),
+      phoneNumber: phone.trim() || undefined,
+      bio: bio.trim() || undefined,
       photoURL: avatarUrl,
       bannerURL: bannerUrl,
       culinaryPreferences: selectedCulinary,
       favoriteVenueTypes: selectedVenues,
       budgetPerVisit: selectedBudget,
       favoriteLocations: locations,
-      socialInstagram: instagram.trim(),
-      socialTikTok: tiktok.trim(),
+      socialInstagram: instagram.trim() || undefined,
+      socialTikTok: tiktok.trim() || undefined,
     };
 
     if (!updated.displayName) {
@@ -319,7 +266,7 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
             {/* Hero Banner with Overlapping Avatar */}
             <View style={styles.heroSection}>
               <View style={styles.bannerWrapper}>
-                <Image source={{ uri: bannerUrl }} style={styles.bannerImage} />
+                {bannerUrl ? <Image source={{ uri: bannerUrl }} style={styles.bannerImage} /> : <View style={[styles.bannerImage, { backgroundColor: '#EFE6DC' }]} />}
                 <TouchableOpacity
                   style={styles.bannerChangeBadge}
                   onPress={handleChangeBanner}
@@ -332,7 +279,7 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
               {/* Overlapping Avatar */}
               <View style={styles.avatarOverlapContainer}>
-                <Image source={{ uri: avatarUrl }} style={styles.avatarOverlapImage} />
+                {avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatarOverlapImage} /> : <View style={[styles.avatarOverlapImage, { backgroundColor: '#EFE6DC' }]} />}
                 <TouchableOpacity
                   style={styles.avatarCameraBadge}
                   onPress={handleAddCustomAvatar}
@@ -347,32 +294,10 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
             <View style={styles.sectionGroup}>
               <Text style={styles.sectionTitle}>Foto Profil</Text>
               <Text style={styles.sectionSubtitle}>
-                Pilih foto preset cepat atau unggah foto dari galeri kamu
+                Unggah foto dari kamera atau galeri kamu
               </Text>
 
               <View style={styles.presetRow}>
-                {avatarPresets.map((uri, idx) => {
-                  const isSelected = avatarUrl === uri;
-                  return (
-                    <TouchableOpacity
-                      key={idx}
-                      style={[
-                        styles.presetCard,
-                        isSelected && styles.presetCardSelected,
-                      ]}
-                      onPress={() => setAvatarUrl(uri)}
-                      activeOpacity={0.8}
-                    >
-                      <Image source={{ uri }} style={styles.presetThumb} />
-                      {isSelected && (
-                        <View style={styles.presetCheckmarkBadge}>
-                          <Check size={11} color="#FFFFFF" strokeWidth={3} />
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-
                 {/* Upload Button */}
                 <TouchableOpacity
                   style={styles.presetUploadTile}
@@ -672,6 +597,14 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                   </View>
                 ))}
 
+                <TextInput
+                  style={styles.addLocationInput}
+                  value={newLocation}
+                  onChangeText={setNewLocation}
+                  placeholder="Kota/kawasan"
+                  placeholderTextColor="#A89A90"
+                  onSubmitEditing={handleAddLocationPrompt}
+                />
                 <TouchableOpacity
                   style={styles.addLocationBtn}
                   onPress={handleAddLocationPrompt}
@@ -1177,6 +1110,16 @@ const styles = StyleSheet.create({
   locationRemoveBtn: {
     padding: 2,
     marginLeft: 2,
+  },
+  addLocationInput: {
+    minWidth: 120,
+    borderWidth: 1,
+    borderColor: '#E8DED3',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 13,
+    color: '#4E2E21',
   },
   addLocationBtn: {
     flexDirection: 'row',

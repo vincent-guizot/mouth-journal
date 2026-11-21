@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { Tabs, useRouter, usePathname } from 'expo-router';
+import { Redirect, Tabs, useRouter, usePathname } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomNavBar, TabType } from '../../src/components/BottomNavBar';
 import { Header } from '../../src/components/Header';
@@ -10,7 +10,10 @@ import { theme } from '../../src/config/theme';
 export default function TabsLayout() {
   const router = useRouter();
   const pathname = usePathname();
-  const { currentUser } = useAuth();
+  const { currentUser, isLoading } = useAuth();
+
+  // Session ended (logout, account deleted, token revoked): leave the protected area.
+  if (!isLoading && !currentUser) return <Redirect href="/(auth)/login" />;
 
   let activeTab: TabType = 'diary';
   if (pathname.includes('/explore')) activeTab = 'explore';

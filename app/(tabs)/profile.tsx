@@ -4,10 +4,12 @@ import { useRouter } from 'expo-router';
 import { ProfileScreen } from '../../src/screens/ProfileScreen';
 import { useAuth } from '../../src/context/AuthContext';
 import { theme } from '../../src/config/theme';
+import { useLogout } from '../../src/features/auth/useLogout';
 
 export default function ProfileTabRoute() {
   const router = useRouter();
-  const { currentUser, logout, isLoading } = useAuth();
+  const { currentUser, isLoading } = useAuth();
+  const logout = useLogout();
 
   if (isLoading || !currentUser) {
     return (
@@ -21,10 +23,7 @@ export default function ProfileTabRoute() {
     <View style={styles.container}>
       <ProfileScreen
         user={currentUser}
-        onLogout={async () => {
-          await logout();
-          router.replace('/(auth)/login');
-        }}
+        onLogout={logout}
         onOpenSettings={() => {
           router.push('/settings');
         }}

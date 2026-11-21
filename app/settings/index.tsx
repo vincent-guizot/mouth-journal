@@ -2,21 +2,18 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SettingsScreen } from '../../src/screens/SettingsScreen';
-import { useAuth } from '../../src/context/AuthContext';
+import { useLogout } from '../../src/features/auth/useLogout';
 import { theme } from '../../src/config/theme';
 
 export default function SettingsIndexRoute() {
   const router = useRouter();
-  const { logout } = useAuth();
+  const logout = useLogout();
 
   return (
     <View style={styles.container}>
       <SettingsScreen
         onBack={() => router.back()}
-        onLogout={async () => {
-          await logout();
-          router.replace('/(auth)/login');
-        }}
+        onLogout={logout}
         onShowOnboarding={() => {
           router.push('/(auth)/welcome');
         }}

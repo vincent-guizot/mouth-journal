@@ -1,5 +1,4 @@
 export { AddLogScreen } from '../../screens/AddLogScreen';
-export { EditJournalScreen } from '../../screens/EditJournalScreen';
 export * from './types';
 export * from './constants/categories';
 export * from './hooks/useJournalForm';

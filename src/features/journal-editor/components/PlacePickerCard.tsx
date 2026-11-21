@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { X, MapPin } from 'lucide-react-native';
-import { NearbyPlace } from '../../../types/places';
+import { JournalPlaceSelection } from '../types';
 import { theme } from '../../../config/theme';
 
 interface PlacePickerCardProps {
-  place: NearbyPlace;
+  place: JournalPlaceSelection;
   onChangePlace: () => void;
 }
 
@@ -26,20 +26,19 @@ export const PlacePickerCard: React.FC<PlacePickerCardProps> = ({
 
       {hasPlace ? (
         <View style={styles.selectedPlaceCard}>
-          <Image
-            source={{
-              uri:
-                place.photoUrl ||
-                'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300&auto=format&fit=crop&q=80',
-            }}
-            style={styles.placeThumb}
-          />
+          {place.photoUrl ? (
+            <Image source={{ uri: place.photoUrl }} style={styles.placeThumb} />
+          ) : (
+            <View style={[styles.placeThumb, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#FAF5EE' }]}>
+              <MapPin size={18} color={theme.colors.terracotta} />
+            </View>
+          )}
           <View style={styles.placeInfo}>
             <Text style={styles.placeNameText} numberOfLines={1}>
               {place.name}
             </Text>
             <Text style={styles.placeAddressText} numberOfLines={1}>
-              {place.address || 'Kawasan Sekitar'}
+              {place.address || (place.providerId === 'manual' ? 'Tempat manual · tanpa alamat' : 'Alamat tidak tersedia di OSM')}
             </Text>
           </View>
           <TouchableOpacity

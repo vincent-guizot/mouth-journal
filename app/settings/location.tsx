@@ -1,18 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Switch,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, MapPin, Compass } from 'lucide-react-native';
+import { ArrowLeft, MapPin } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/AuthContext';
-import { userPreferencesRepository } from '../../src/repositories';
+import { usePreferences } from '../../src/features/settings/usePreferences';
 import { theme } from '../../src/config/theme';
 
 const RADIUS_OPTIONS = [1, 3, 5, 10]; // Strictly kilometers
@@ -20,28 +18,9 @@ const RADIUS_OPTIONS = [1, 3, 5, 10]; // Strictly kilometers
 export default function LocationSettingsRoute() {
   const router = useRouter();
   const { currentUser, userLocation } = useAuth();
-  const [searchRadiusKm, setSearchRadiusKm] = useState(3.5);
-  const [autoAttachLocation, setAutoAttachLocation] = useState(true);
-
-  useEffect(() => {
-    if (currentUser?.uid) {
-      (userPreferencesRepository as any)
-        .getPreferences(currentUser.uid)
-        .then((pref: any) => {
-          if (pref.searchRadiusKm) setSearchRadiusKm(pref.searchRadiusKm);
-        })
-        .catch(() => {});
-    }
-  }, [currentUser?.uid]);
-
-  const handleSelectRadius = async (km: number) => {
-    setSearchRadiusKm(km);
-    if (currentUser?.uid) {
-      await (userPreferencesRepository as any).updatePreferences(currentUser.uid, {
-        searchRadiusKm: km,
-      });
-    }
-  };
+  const { settings, update } = usePreferences(currentUser?.uid);
+  const searchRadiusKm = settings?.searchRadiusKm;
+  const handleSelectRadius = (km: number) => update({ searchRadiusKm: km });
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -67,10 +46,12 @@ export default function LocationSettingsRoute() {
                 <Text style={styles.locationTitle}>
                   {userLocation.district
                     ? `${userLocation.district}, ${userLocation.city}`
-                    : userLocation.city || 'Jakarta'}
+                    : userLocation.city || 'Lokasi tidak diketahui'}
                 </Text>
                 <Text style={styles.locationSubtitle}>
-                  {userLocation.address || 'Kawasan Sekitar'}
+                  {userLocation.source === 'gps'
+                    ? userLocation.address || 'Alamat tidak tersedia'
+                    : 'GPS tidak tersedia/ditolak — memakai lokasi default, bukan posisi Anda.'}
                 </Text>
               </View>
             </View>
@@ -84,7 +65,7 @@ export default function LocationSettingsRoute() {
           </Text>
           <View style={styles.radiusRow}>
             {RADIUS_OPTIONS.map((km) => {
-              const isSelected = Math.round(searchRadiusKm) === km;
+              const isSelected = searchRadiusKm === km;
               return (
                 <TouchableOpacity
                   key={km}
@@ -109,25 +90,6 @@ export default function LocationSettingsRoute() {
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferensi Jurnal</Text>
-          <View style={styles.card}>
-            <View style={styles.toggleRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.toggleTitle}>Sematkan Lokasi Otomatis</Text>
-                <Text style={styles.toggleDesc}>
-                  Secara otomatis mendeteksi tempat terdekat saat menulis jurnal baru.
-                </Text>
-              </View>
-              <Switch
-                value={autoAttachLocation}
-                onValueChange={setAutoAttachLocation}
-                trackColor={{ false: '#E2D9CF', true: theme.colors.terracotta }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
-          </View>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );

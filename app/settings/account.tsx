@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,47 +6,67 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, User, Mail, Shield, LogOut, Trash2 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/AuthContext';
 import { theme } from '../../src/config/theme';
+import { useLogout } from '../../src/features/auth/useLogout';
 
 export default function AccountSettingsRoute() {
   const router = useRouter();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, session, appMode, sendPasswordReset, deleteAccount } = useAuth();
+  const logout = useLogout();
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleLogout = () => {
     Alert.alert('Keluar', 'Apakah Anda yakin ingin keluar dari akun ini?', [
       { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Keluar',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-          router.replace('/(auth)/login');
-        },
-      },
+      { text: 'Keluar', style: 'destructive', onPress: logout },
     ]);
   };
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      'Hapus Akun',
-      'Tindakan ini permanen. Semua jurnal, foto, dan preferensi akan dihapus selamanya.',
-      [
-        { text: 'Batal', style: 'cancel' },
-        {
-          text: 'Hapus Selamanya',
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            router.replace('/(auth)/welcome');
-          },
-        },
-      ]
-    );
+  const handleSendReset = async () => {
+    if (!currentUser?.email) return;
+    setIsSendingReset(true);
+    try {
+      await sendPasswordReset(currentUser.email);
+      Alert.alert('Email Terkirim', `Link ubah password dikirim ke ${currentUser.email}.`);
+    } catch (err) {
+      Alert.alert('Gagal Mengirim', err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (appMode === 'firebase' && !deletePassword) {
+      Alert.alert('Password Diperlukan', 'Masukkan password Anda untuk mengonfirmasi penghapusan akun.');
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      const report = await deleteAccount(deletePassword);
+      setDeleteOpen(false);
+      Alert.alert(
+        'Akun Dihapus',
+        appMode === 'firebase'
+          ? `${report.firestoreDocumentsDeleted} dokumen dan ${report.storageFilesDeleted} foto telah dihapus permanen.`
+          : 'Seluruh data lokal mode demo telah dihapus dari perangkat ini.'
+      );
+      router.replace('/(auth)/welcome');
+    } catch (err) {
+      Alert.alert('Gagal Menghapus Akun', err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsDeleting(false);
+      setDeletePassword('');
+    }
   };
 
   return (
@@ -63,7 +83,7 @@ export default function AccountSettingsRoute() {
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Informasi Akun</Text>
           <View style={styles.card}>
@@ -71,7 +91,7 @@ export default function AccountSettingsRoute() {
               <User size={20} color={theme.colors.terracotta} />
               <View style={styles.rowText}>
                 <Text style={styles.label}>Nama Tampilan</Text>
-                <Text style={styles.value}>{currentUser?.displayName || 'Pengguna'}</Text>
+                <Text style={styles.value}>{currentUser?.displayName ?? '-'}</Text>
               </View>
             </View>
             <View style={styles.divider} />
@@ -79,7 +99,7 @@ export default function AccountSettingsRoute() {
               <Mail size={20} color={theme.colors.terracotta} />
               <View style={styles.rowText}>
                 <Text style={styles.label}>Email</Text>
-                <Text style={styles.value}>{currentUser?.email || '-'}</Text>
+                <Text style={styles.value}>{currentUser?.email ?? '-'}</Text>
               </View>
             </View>
             <View style={styles.divider} />
@@ -87,22 +107,35 @@ export default function AccountSettingsRoute() {
               <Shield size={20} color={theme.colors.terracotta} />
               <View style={styles.rowText}>
                 <Text style={styles.label}>Status Sesi</Text>
-                <Text style={styles.value}>Aktif Terenkripsi</Text>
+                <Text style={styles.value}>
+                  {appMode === 'demo'
+                    ? 'Mode demo lokal (tanpa cloud)'
+                    : session?.emailVerified
+                    ? 'Firebase Auth · email terverifikasi'
+                    : 'Firebase Auth · email belum terverifikasi'}
+                </Text>
               </View>
             </View>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Keamanan</Text>
-          <TouchableOpacity
-            style={styles.actionButton}
-            activeOpacity={0.8}
-            onPress={() => Alert.alert('Ganti Kata Sandi', 'Tautan pemulihan dikirim ke email Anda.')}
-          >
-            <Text style={styles.actionButtonText}>Kirim Tautan Ubah Password</Text>
-          </TouchableOpacity>
-        </View>
+        {appMode === 'firebase' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Keamanan</Text>
+            <TouchableOpacity
+              style={[styles.actionButton, isSendingReset && { opacity: 0.6 }]}
+              activeOpacity={0.8}
+              disabled={isSendingReset}
+              onPress={handleSendReset}
+            >
+              {isSendingReset ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.actionButtonText}>Kirim Tautan Ubah Password</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Tindakan Akun</Text>
@@ -118,11 +151,42 @@ export default function AccountSettingsRoute() {
           <TouchableOpacity
             style={[styles.outlineDangerButton, { marginTop: 12 }]}
             activeOpacity={0.8}
-            onPress={handleDeleteAccount}
+            onPress={() => setDeleteOpen((v) => !v)}
           >
             <Trash2 size={18} color="#C83E14" />
             <Text style={styles.outlineDangerText}>Hapus Akun Permanen</Text>
           </TouchableOpacity>
+
+          {deleteOpen && (
+            <View style={[styles.card, { marginTop: 12 }]}>
+              <Text style={styles.label}>
+                Tindakan ini permanen: akun login, semua jurnal, wishlist, preferensi, profil, dan foto di
+                cloud akan dihapus.
+              </Text>
+              {appMode === 'firebase' && (
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Password saat ini"
+                  placeholderTextColor="#A89A90"
+                  secureTextEntry
+                  value={deletePassword}
+                  onChangeText={setDeletePassword}
+                  autoCapitalize="none"
+                />
+              )}
+              <TouchableOpacity
+                style={[styles.deleteConfirmButton, isDeleting && { opacity: 0.6 }]}
+                disabled={isDeleting}
+                onPress={confirmDelete}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.actionButtonText}>Ya, Hapus Selamanya</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -225,5 +289,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#C83E14',
+  },
+  passwordInput: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#E8DED3',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: theme.colors.coffeeBrown,
+  },
+  deleteConfirmButton: {
+    marginTop: 12,
+    backgroundColor: '#C83E14',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
   },
 });

@@ -7,7 +7,13 @@ import { theme } from '../../src/config/theme';
 
 export default function ExploreTabRoute() {
   const router = useRouter();
-  const { currentUser, userLocation, isLoading } = useAuth();
+  const {
+    currentUser,
+    userLocation,
+    isLoading,
+    refreshUserLocation,
+    isRefreshingLocation,
+  } = useAuth();
 
   if (isLoading || !currentUser) {
     return (
@@ -22,6 +28,8 @@ export default function ExploreTabRoute() {
       <ExploreScreen
         userId={currentUser.uid}
         userLocation={userLocation}
+        onRefreshLocation={refreshUserLocation}
+        isRefreshingLocation={isRefreshingLocation}
         onPlaceSelect={(place) => {
           router.push({
             pathname: '/places/[placeId]',

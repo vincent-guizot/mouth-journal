@@ -1,16 +1,22 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { Coffee, Camera, MapPin, Star, Bookmark, Crown, ChevronRight } from 'lucide-react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { Coffee, Camera, MapPin, Star, Crown } from 'lucide-react-native';
 
-const ACHIEVEMENTS = [
-  { id: 'coffee', title: 'Coffee Lover', count: '10 tempat', icon: Coffee },
-  { id: 'foodie', title: 'Foodie', count: '50 foto', icon: Camera },
-  { id: 'explorer', title: 'Explorer', count: '10 kota', icon: MapPin },
-  { id: 'reviewer', title: 'Top Reviewer', count: '25 review', icon: Star },
-  { id: 'wishlist', title: 'Wishlist Pro', count: '30 tempat', icon: Bookmark },
-];
+export interface ProfileBadgeCounts {
+  drinksCount: number;
+  photoCount: number;
+  totalPlaces: number;
+  totalVisits: number;
+}
 
-export const ProfileBadgesSection: React.FC = () => {
+/** Progress computed from the user's real journals (no hard-coded achievement counts). */
+export const ProfileBadgesSection: React.FC<{ counts: ProfileBadgeCounts }> = ({ counts }) => {
+  const achievements = [
+    { id: 'coffee', title: 'Coffee Lover', count: `${counts.drinksCount} kunjungan minuman`, icon: Coffee },
+    { id: 'foodie', title: 'Foodie', count: `${counts.photoCount} foto`, icon: Camera },
+    { id: 'explorer', title: 'Explorer', count: `${counts.totalPlaces} tempat`, icon: MapPin },
+    { id: 'reviewer', title: 'Reviewer', count: `${counts.totalVisits} jurnal`, icon: Star },
+  ];
   return (
     <View style={styles.sectionBlock}>
       <View style={styles.headerRow}>
@@ -20,22 +26,18 @@ export const ProfileBadgesSection: React.FC = () => {
           </View>
           <Text style={styles.sectionTitle}>Pencapaian</Text>
         </View>
-        <TouchableOpacity style={styles.seeAllBtn} activeOpacity={0.7}>
-          <Text style={styles.seeAllText}>Lihat Semua</Text>
-          <ChevronRight size={14} color="#D04A1E" />
-        </TouchableOpacity>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scroll}>
-        {ACHIEVEMENTS.map((item) => {
+        {achievements.map((item) => {
           const Icon = item.icon;
           return (
-            <TouchableOpacity key={item.id} style={styles.badgeCard} activeOpacity={0.8}>
+            <View key={item.id} style={styles.badgeCard}>
               <View style={styles.badgeIconWrapper}>
                 <Icon size={18} color="#6B3F2E" />
               </View>
               <Text style={styles.badgeTitle}>{item.title}</Text>
               <Text style={styles.badgeCount}>{item.count}</Text>
-            </TouchableOpacity>
+            </View>
           );
         })}
       </ScrollView>

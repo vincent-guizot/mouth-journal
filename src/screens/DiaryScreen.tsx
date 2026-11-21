@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { DiaryEntry } from '../types/diary';
-import { NearbyPlace, UserLocation } from '../types/places';
 import { DiaryCard } from '../components/DiaryCard';
 import { theme } from '../config/theme';
 import { Search } from 'lucide-react-native';
@@ -18,28 +17,14 @@ import { useDiaryScreen } from '../features/diary/hooks/useDiaryScreen';
 import { DiarySegmentTab } from '../features/diary/components/DiarySegmentTab';
 import { DiaryCategoryPills } from '../features/diary/components/DiaryCategoryPills';
 import { DiaryEmptyView } from '../features/diary/components/DiaryEmptyView';
+import { ErrorState } from '../components/feedback/ErrorState';
 
 export interface DiaryScreenProps {
   userId: string;
-  userLocation: UserLocation;
-  onAddPress?: () => void;
-  onAddLog?: () => void;
-  onPlaceSelect: (place: NearbyPlace) => void;
-  onJournalSelect?: (entry: DiaryEntry) => void;
-  onOpenAIRecommendations?: () => void;
-  onOpenMap?: () => void;
+  onJournalSelect: (entry: DiaryEntry) => void;
 }
 
-export const DiaryScreen: React.FC<DiaryScreenProps> = ({
-  userId,
-  userLocation,
-  onAddPress,
-  onAddLog,
-  onPlaceSelect,
-  onJournalSelect,
-  onOpenAIRecommendations,
-  onOpenMap,
-}) => {
+export const DiaryScreen: React.FC<DiaryScreenProps> = ({ userId, onJournalSelect }) => {
   const {
     activeSegment,
     setActiveSegment,
@@ -51,31 +36,9 @@ export const DiaryScreen: React.FC<DiaryScreenProps> = ({
     loading,
     refreshing,
     onRefresh,
+    error,
+    syncState,
   } = useDiaryScreen({ userId });
-
-  const handleCardPress = (entry: DiaryEntry) => {
-    if (onJournalSelect) {
-      onJournalSelect(entry);
-      return;
-    }
-
-    const place: NearbyPlace = {
-      id: entry.placeId,
-      name: entry.placeName,
-      mainCategory: entry.mainCategory,
-      mainCategoryLabel: entry.mainCategory === 'drinks' ? 'Drinks' : entry.mainCategory === 'wisata' ? 'Wisata' : 'Food',
-      subCategory: entry.subCategory,
-      subCategoryLabel: entry.subCategoryLabel,
-      latitude: entry.latitude,
-      longitude: entry.longitude,
-      address: entry.placeAddress,
-      distanceMeter: 0,
-      photoUrl: entry.photoUrls && entry.photoUrls.length > 0 ? entry.photoUrls[0] : undefined,
-      ratingAverage: entry.overallRating,
-      ratingCount: 1,
-    };
-    onPlaceSelect(place);
-  };
 
   return (
     <View style={styles.container}>
@@ -105,12 +68,24 @@ export const DiaryScreen: React.FC<DiaryScreenProps> = ({
         </View>
       </View>
 
+      {(syncState.pending > 0 || syncState.failed.length > 0) && (
+        <View style={styles.syncBanner}>
+          <Text style={styles.syncBannerText}>
+            {syncState.failed.length > 0
+              ? `${syncState.failed.length} perubahan ditolak server: ${syncState.failed[0].lastError ?? 'tidak diketahui'}`
+              : `${syncState.pending} perubahan menunggu sinkronisasi ke cloud.`}
+          </Text>
+        </View>
+      )}
+
       {/* 5. Diary Cards Feed */}
       {loading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={theme.colors.terracotta} />
           <Text style={styles.loadingText}>Memuat catatan kuliner...</Text>
         </View>
+      ) : error && filteredDiaries.length === 0 ? (
+        <ErrorState message={error} onRetry={onRefresh} />
       ) : filteredDiaries.length === 0 ? (
         <DiaryEmptyView segment={activeSegment} />
       ) : (
@@ -120,7 +95,7 @@ export const DiaryScreen: React.FC<DiaryScreenProps> = ({
           renderItem={({ item }) => (
             <DiaryCard
               entry={item}
-              onPress={() => handleCardPress(item)}
+              onPress={() => onJournalSelect(item)}
             />
           )}
           contentContainerStyle={styles.feedContent}
@@ -139,6 +114,19 @@ export const DiaryScreen: React.FC<DiaryScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
+  syncBanner: {
+    marginHorizontal: theme.spacing.lg,
+    marginTop: 8,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#FFF4E5',
+    borderWidth: 1,
+    borderColor: '#F0C38E',
+  },
+  syncBannerText: {
+    fontSize: 12,
+    color: '#7A4B12',
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',

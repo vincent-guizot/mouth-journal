@@ -12,14 +12,14 @@ export const ProfileStatsBar: React.FC<ProfileStatsBarProps> = ({ stats }) => {
     <View style={styles.statsCardContainer}>
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
-          <Text style={styles.statNum}>{stats.totalVisits || 18}</Text>
+          <Text style={styles.statNum}>{stats.totalVisits}</Text>
           <Text style={styles.statLabel}>Jurnal</Text>
         </View>
 
         <View style={styles.statDivider} />
 
         <View style={styles.statBox}>
-          <Text style={styles.statNum}>{stats.totalPlaces || 14}</Text>
+          <Text style={styles.statNum}>{stats.totalPlaces}</Text>
           <Text style={styles.statLabel}>Tempat</Text>
         </View>
 
@@ -27,7 +27,7 @@ export const ProfileStatsBar: React.FC<ProfileStatsBarProps> = ({ stats }) => {
 
         <View style={styles.statBox}>
           <Text style={styles.statNum} numberOfLines={1}>
-            {stats.favoriteCategory || 'Kopi/Cafe'}
+            {stats.favoriteCategory ?? '–'}
           </Text>
           <Text style={styles.statLabel}>Favorit</Text>
         </View>
@@ -36,7 +36,7 @@ export const ProfileStatsBar: React.FC<ProfileStatsBarProps> = ({ stats }) => {
 
         <View style={styles.statBox}>
           <Text style={styles.statNum}>
-            {stats.averageRating ? stats.averageRating.toFixed(1) : '4.7'}
+            {stats.averageRating !== null ? stats.averageRating.toFixed(1) : '–'}
           </Text>
           <Text style={styles.statLabel}>Rata-rata</Text>
         </View>

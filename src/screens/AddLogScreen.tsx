@@ -61,7 +61,7 @@ export const AddLogScreen: React.FC<AddLogScreenProps> = ({
     addPhotoUri,
     handleRemovePhoto,
     selectedPlace,
-    setSelectedPlace,
+    editPlaceManually,
     visitDate,
     visitedAt,
     setVisitedAt,
@@ -93,16 +93,11 @@ export const AddLogScreen: React.FC<AddLogScreenProps> = ({
   };
 
   const savePlace = () => {
-    const name = placeNameInput.trim();
-    if (!name) {
+    if (!placeNameInput.trim()) {
       Alert.alert('Nama tempat diperlukan', 'Masukkan nama tempat sebelum melanjutkan.');
       return;
     }
-    setSelectedPlace({
-      ...selectedPlace,
-      name,
-      address: placeAddressInput.trim() || 'Kawasan Sekitar',
-    });
+    editPlaceManually(placeNameInput, placeAddressInput);
     setPlaceModalVisible(false);
   };
 
@@ -116,8 +111,8 @@ export const AddLogScreen: React.FC<AddLogScreenProps> = ({
         onPress: async () => {
           try {
             await onDelete();
-          } catch (error: any) {
-            Alert.alert('Gagal menghapus jurnal', error?.message || 'Coba lagi sebentar.');
+          } catch (error) {
+            Alert.alert('Gagal menghapus jurnal', error instanceof Error ? error.message : String(error));
           }
         },
       },
@@ -125,19 +120,25 @@ export const AddLogScreen: React.FC<AddLogScreenProps> = ({
   };
 
   const chooseFoodPhoto = async () => {
-    const uri = await ImageService.pickImageFromGallery();
-    if (uri) setFoodPhotoUri(uri);
+    try {
+      const uri = await ImageService.pickImageFromGallery();
+      if (uri) setFoodPhotoUri(uri);
+    } catch (err) {
+      Alert.alert('Gagal Memilih Foto', err instanceof Error ? err.message : String(err));
+    }
   };
 
   const saveFood = () => {
     const name = foodName.trim();
-    const price = Number(foodPrice.replace(/[^0-9]/g, ''));
-    if (!foodPhotoUri || !name || !price) {
-      Alert.alert('Lengkapi menu', 'Pilih satu foto, masukkan nama makanan dan harganya.');
+    const digits = foodPrice.replace(/[^0-9]/g, '');
+    const price = Number(digits);
+    if (!name || digits === '' || !Number.isSafeInteger(price)) {
+      Alert.alert('Lengkapi menu', 'Masukkan nama makanan dan harganya (foto opsional).');
       return;
     }
-    addPhotoUri(foodPhotoUri);
-    handleAddMenu(name, price, 5, foodPhotoUri);
+    if (foodPhotoUri) addPhotoUri(foodPhotoUri);
+    // Rating is left unset: the dish was not rated in this dialog.
+    handleAddMenu(name, price, undefined, foodPhotoUri ?? undefined);
     setFoodPhotoUri(null);
     setFoodName('');
     setFoodPrice('');
@@ -249,6 +250,7 @@ export const AddLogScreen: React.FC<AddLogScreenProps> = ({
           value={visitedAt}
           mode="date"
           display="default"
+          maximumDate={new Date()}
           onChange={(_, date) => {
             setDatePickerVisible(false);
             if (date) setVisitedAt(date);
@@ -260,7 +262,7 @@ export const AddLogScreen: React.FC<AddLogScreenProps> = ({
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Tambah makanan</Text>
             <TouchableOpacity style={styles.photoPicker} onPress={chooseFoodPhoto}>
-              {foodPhotoUri ? <Image source={{ uri: foodPhotoUri }} style={styles.foodPreview} /> : <Text style={styles.photoPickerText}>Pilih satu foto makanan</Text>}
+              {foodPhotoUri ? <Image source={{ uri: foodPhotoUri }} style={styles.foodPreview} /> : <Text style={styles.photoPickerText}>Pilih foto makanan (opsional)</Text>}
             </TouchableOpacity>
             <TextInput style={styles.modalInput} value={foodName} onChangeText={setFoodName} placeholder="Nama makanan atau minuman" placeholderTextColor={theme.colors.textTertiary} />
             <TextInput style={styles.modalInput} value={foodPrice} onChangeText={setFoodPrice} placeholder="Harga, contoh: 35000" keyboardType="numeric" placeholderTextColor={theme.colors.textTertiary} />

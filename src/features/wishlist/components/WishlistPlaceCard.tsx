@@ -1,88 +1,75 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { MapPin, Heart, MoreVertical, Star } from 'lucide-react-native';
-import { theme } from '../../../config/theme';
-import { WishlistCardItem } from '../../../mocks/data/mockWishlist';
+import { MapPin, Heart } from 'lucide-react-native';
+import { WishlistItem } from '../../../models/wishlist';
+import { formatDistance } from '../../../utils/geo';
 
 interface WishlistPlaceCardProps {
-  item: WishlistCardItem;
+  item: WishlistItem;
+  /** Distance from the user's current location, if known. */
+  distanceMeter?: number;
   onPress: () => void;
   onToggleHeart: () => void;
 }
 
 export const WishlistPlaceCard: React.FC<WishlistPlaceCardProps> = ({
   item,
+  distanceMeter,
   onPress,
   onToggleHeart,
 }) => {
   return (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={onPress}
-      activeOpacity={0.92}
-    >
-      {/* Thumbnail Kiri */}
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.92}>
       <View style={styles.imageCol}>
-        <Image source={{ uri: item.image }} style={styles.thumbnail} resizeMode="cover" />
+        {item.photoUrl ? (
+          <Image source={{ uri: item.photoUrl }} style={styles.thumbnail} resizeMode="cover" />
+        ) : (
+          <View style={[styles.thumbnail, { backgroundColor: '#FAF5EE', alignItems: 'center', justifyContent: 'center' }]}>
+            <MapPin size={22} color="#D04A1E" />
+          </View>
+        )}
       </View>
 
-      {/* Konten Kanan */}
       <View style={styles.contentCol}>
-        {/* Baris Atas: Judul & Ikon Hati + More */}
         <View style={styles.cardHeaderRow}>
           <Text style={styles.placeName} numberOfLines={1}>
-            {item.name}
+            {item.placeName}
           </Text>
           <View style={styles.actionIconGroup}>
             <TouchableOpacity
+              accessibilityLabel="Hapus dari wishlist"
               onPress={onToggleHeart}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={{ marginRight: 8 }}
             >
               <Heart size={16} color="#D04A1E" fill="#D04A1E" />
             </TouchableOpacity>
-            <TouchableOpacity hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-              <MoreVertical size={16} color={theme.colors.textTertiary} />
-            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Lokasi */}
         <View style={styles.locationRow}>
           <MapPin size={11} color="#D04A1E" />
           <Text style={styles.addressText} numberOfLines={1}>
-            {item.address}
+            {item.placeAddress || 'Alamat tidak tersedia'}
           </Text>
         </View>
 
-        {/* Kategori, Rating Bintang, dan Jarak */}
         <View style={styles.metaRow}>
           <View style={styles.categoryPill}>
-            <Text style={styles.categoryIcon}>{item.categoryIcon}</Text>
-            <Text style={styles.categoryLabel}>{item.categoryLabel}</Text>
+            <Text style={styles.categoryLabel}>{item.subCategoryLabel}</Text>
           </View>
-
-          <View style={styles.starsGroup}>
-            {[1, 2, 3, 4, 5].map((s) => (
-              <Star
-                key={s}
-                size={11}
-                color="#F39A28"
-                fill="#F39A28"
-                style={{ marginRight: 1 }}
-              />
-            ))}
-          </View>
-          <Text style={styles.ratingText}>{item.rating}</Text>
-          <Text style={styles.reviewCountText}>({item.reviewCount})</Text>
-          <Text style={styles.distanceDot}>·</Text>
-          <Text style={styles.distanceText}>{item.distance}</Text>
+          {distanceMeter !== undefined && (
+            <>
+              <Text style={styles.distanceDot}>·</Text>
+              <Text style={styles.distanceText}>{formatDistance(distanceMeter)}</Text>
+            </>
+          )}
         </View>
 
-        {/* Catatan / Deskripsi Singkat */}
-        <Text style={styles.descriptionText} numberOfLines={2}>
-          {item.description}
-        </Text>
+        {item.personalNotes ? (
+          <Text style={styles.descriptionText} numberOfLines={2}>
+            {item.personalNotes}
+          </Text>
+        ) : null}
       </View>
     </TouchableOpacity>
   );

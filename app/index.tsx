@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useAuth } from '../src/context/AuthContext';
@@ -8,10 +8,11 @@ import { theme } from '../src/config/theme';
 export default function IndexGatekeeper() {
   const { currentUser, isLoading, onboardingCompleted } = useAuth();
   const [splashFinished, setSplashFinished] = useState(false);
+  const finishSplash = useCallback(() => setSplashFinished(true), []);
 
   // 1. Tampilkan Animated Splash Screen pertama kali
   if (!splashFinished) {
-    return <SplashScreen onFinish={() => setSplashFinished(true)} />;
+    return <SplashScreen onFinish={finishSplash} />;
   }
 
   // 2. Loading state dari Auth Context

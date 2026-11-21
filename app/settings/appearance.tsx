@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, Sun, Moon, Smartphone, Check } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/AuthContext';
-import { userPreferencesRepository } from '../../src/repositories';
+import { usePreferences } from '../../src/features/settings/usePreferences';
 import { theme } from '../../src/config/theme';
 
 type AppearanceMode = 'light' | 'dark' | 'system';
@@ -18,46 +18,36 @@ type AppearanceMode = 'light' | 'dark' | 'system';
 export default function AppearanceSettingsRoute() {
   const router = useRouter();
   const { currentUser } = useAuth();
-  const [mode, setMode] = useState<AppearanceMode>('light');
-
-  useEffect(() => {
-    if (currentUser?.uid) {
-      (userPreferencesRepository as any)
-        .getPreferences(currentUser.uid)
-        .then((pref: any) => {
-          if (pref.themeMode) setMode(pref.themeMode as AppearanceMode);
-        })
-        .catch(() => {});
-    }
-  }, [currentUser?.uid]);
-
-  const handleSelectMode = async (selected: AppearanceMode) => {
-    setMode(selected);
-    if (currentUser?.uid) {
-      await (userPreferencesRepository as any).updatePreferences(currentUser.uid, {
-        themeMode: selected,
-      });
-    }
+  const { settings, update } = usePreferences(currentUser?.uid);
+  const mode: AppearanceMode = settings?.appearance ?? 'light';
+  // Only the light theme is implemented in the UI; dark/system are shown disabled
+  // instead of pretending to switch the theme.
+  const handleSelectMode = (selected: AppearanceMode) => {
+    if (selected !== 'light') return;
+    update({ appearance: selected });
   };
 
-  const THEMES: { id: AppearanceMode; title: string; subtitle: string; icon: any }[] = [
+  const THEMES: { id: AppearanceMode; title: string; subtitle: string; icon: typeof Sun; available: boolean }[] = [
     {
       id: 'light',
       title: 'Light Mode (Warm Café)',
       subtitle: 'Nuansa krem hangat, terracotta, dan coffee brown.',
       icon: Sun,
+      available: true,
     },
     {
       id: 'dark',
       title: 'Dark Mode (Espresso Night)',
       subtitle: 'Kenyamanan mata untuk pencatatan malam hari.',
       icon: Moon,
+      available: false,
     },
     {
       id: 'system',
       title: 'Sesuai Sistem',
       subtitle: 'Mengikuti pengaturan tema perangkat Anda secara otomatis.',
       icon: Smartphone,
+      available: false,
     },
   ];
 
@@ -84,7 +74,8 @@ export default function AppearanceSettingsRoute() {
             return (
               <TouchableOpacity
                 key={item.id}
-                style={[styles.themeCard, isSelected && styles.themeCardSelected]}
+                style={[styles.themeCard, isSelected && styles.themeCardSelected, !item.available && { opacity: 0.45 }]}
+                disabled={!item.available}
                 onPress={() => handleSelectMode(item.id)}
                 activeOpacity={0.85}
               >
@@ -96,7 +87,7 @@ export default function AppearanceSettingsRoute() {
                 </View>
                 <View style={styles.info}>
                   <Text style={styles.title}>{item.title}</Text>
-                  <Text style={styles.subtitle}>{item.subtitle}</Text>
+                  <Text style={styles.subtitle}>{item.available ? item.subtitle : 'Belum tersedia di versi ini.'}</Text>
                 </View>
                 {isSelected && (
                   <View style={styles.checkCircle}>

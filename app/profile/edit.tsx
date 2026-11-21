@@ -1,15 +1,14 @@
 import React from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { EditProfileScreen } from '../../src/screens/EditProfileScreen';
 import { useAuth } from '../../src/context/AuthContext';
-import { userProfileRepository } from '../../src/repositories';
-import { ImageService } from '../../src/services/firebase/imageService';
+import { ImageService, isRemoteImageUrl } from '../../src/services/firebase/imageService';
 import { theme } from '../../src/config/theme';
 
 export default function EditProfileRoute() {
   const router = useRouter();
-  const { currentUser, updateUser, isLoading } = useAuth();
+  const { currentUser, updateProfile, isLoading } = useAuth();
 
   if (isLoading || !currentUser) {
     return (
@@ -25,18 +24,20 @@ export default function EditProfileRoute() {
         user={currentUser}
         onBack={() => router.back()}
         onSave={async (updatedProfile) => {
-          if (currentUser?.uid) {
-            const uploadIfLocal = async (uri?: string, folder: string = 'profile') =>
-              uri?.startsWith('file:') || uri?.startsWith('content:')
-                ? ImageService.uploadImage(uri, currentUser.uid, folder)
-                : uri;
-            const profileWithUploadedImages = {
-              ...updatedProfile,
-              photoURL: await uploadIfLocal(updatedProfile.photoURL, 'avatars'),
-              bannerURL: await uploadIfLocal(updatedProfile.bannerURL, 'banners'),
-            };
-            await userProfileRepository.updateProfile(currentUser.uid, profileWithUploadedImages);
-            await updateUser(profileWithUploadedImages);
+          // Local picker URIs are uploaded first; a failed/too-large upload throws and
+          // nothing is saved (EditProfileScreen shows the error).
+          const upload = async (uri: string | undefined, folder: 'avatars' | 'banners') =>
+            uri && !isRemoteImageUrl(uri) ? (await ImageService.upload(uri, currentUser.uid, folder)).url : uri;
+          const { emailVerificationSentTo } = await updateProfile({
+            ...updatedProfile,
+            photoURL: await upload(updatedProfile.photoURL, 'avatars'),
+            bannerURL: await upload(updatedProfile.bannerURL, 'banners'),
+          });
+          if (emailVerificationSentTo) {
+            Alert.alert(
+              'Verifikasi Email',
+              `Link verifikasi dikirim ke ${emailVerificationSentTo}. Email akun berubah setelah link dibuka.`
+            );
           }
           router.back();
         }}

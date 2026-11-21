@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, Check, Coffee, Utensils, Cake, Wine } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/AuthContext';
-import { userPreferencesRepository } from '../../src/repositories';
+import { usePreferences } from '../../src/features/settings/usePreferences';
 import { theme } from '../../src/config/theme';
 
 const AVAILABLE_CATEGORIES = [
@@ -27,39 +27,14 @@ const AVAILABLE_CATEGORIES = [
 export default function FoodPreferencesSettingsRoute() {
   const router = useRouter();
   const { currentUser } = useAuth();
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([
-    'Specialty Coffee',
-    'Pastry & Croissant',
-  ]);
-
-  useEffect(() => {
-    if (currentUser?.uid) {
-      (userPreferencesRepository as any)
-        .getPreferences(currentUser.uid)
-        .then((pref: any) => {
-          if (pref.favoriteCategories && pref.favoriteCategories.length > 0) {
-            setSelectedCategories(pref.favoriteCategories);
-          }
-        })
-        .catch(() => {});
-    }
-  }, [currentUser?.uid]);
-
-  const toggleCategory = async (cat: string) => {
-    let next: string[];
-    if (selectedCategories.includes(cat)) {
-      next = selectedCategories.filter((c) => c !== cat);
-    } else {
-      next = [...selectedCategories, cat];
-    }
-    setSelectedCategories(next);
-
-    if (currentUser?.uid) {
-      await (userPreferencesRepository as any).updatePreferences(currentUser.uid, {
-        favoriteCategories: next,
-      });
-    }
-  };
+  const { settings, update } = usePreferences(currentUser?.uid);
+  const selectedCategories = settings?.foodPreferences.favoriteCategories ?? [];
+  const toggleCategory = (cat: string) =>
+    update({
+      favoriteCategories: selectedCategories.includes(cat)
+        ? selectedCategories.filter((c) => c !== cat)
+        : [...selectedCategories, cat],
+    });
 
   return (
     <SafeAreaView style={styles.safeArea}>

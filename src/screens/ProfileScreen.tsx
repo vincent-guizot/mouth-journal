@@ -32,6 +32,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     userDiaries,
     stats,
     loading,
+    error,
   } = useProfileScreen(user);
 
   return (
@@ -55,7 +56,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         activeTab={activeTab}
         onTabChange={setActiveTab}
         journalsCount={userDiaries.length}
-        placesCount={stats.totalPlaces || 14}
+        placesCount={stats.totalPlaces}
       />
 
       {/* 4. Tab Content: Journals / Places / Menus / Wishlist */}
@@ -63,6 +64,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="small" color={theme.colors.terracotta} />
+          </View>
+        ) : error ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Jurnal gagal dimuat: {error}</Text>
+          </View>
+        ) : activeTab === 'jurnal' && userDiaries.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Belum ada jurnal.</Text>
           </View>
         ) : activeTab === 'jurnal' ? (
           userDiaries.map((journal) => (
@@ -75,7 +84,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         ) : (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
-              Fitur {activeTab} siap ditampilkan dalam rilis berikutnya.
+              Tab &quot;{activeTab}&quot; belum tersedia.
             </Text>
           </View>
         )}

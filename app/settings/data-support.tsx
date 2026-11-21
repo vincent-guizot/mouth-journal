@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Share,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Database, Trash2, HelpCircle, FileText, Download } from 'lucide-react-native';
@@ -18,34 +19,50 @@ import {
   userProfileRepository,
 } from '../../src/repositories';
 import { theme } from '../../src/config/theme';
+import { buildExportArchive } from '../../src/features/settings/exportArchive';
 
 export default function DataSupportSettingsRoute() {
   const router = useRouter();
-  const { currentUser } = useAuth();
+  const { currentUser, appMode } = useAuth();
   const [isClearing, setIsClearing] = useState(false);
 
   const handleClearCache = async () => {
     if (!currentUser?.uid) return;
+    const uid = currentUser.uid;
+    if (appMode === 'demo') {
+      Alert.alert('Tidak Tersedia', 'Di mode demo, cache lokal adalah satu-satunya salinan data Anda dan tidak dapat dibersihkan dari sini.');
+      return;
+    }
+    let pending = 0;
+    try {
+      const [j, w] = await Promise.all([journalRepository.getSyncState(uid), wishlistRepository.getSyncState(uid)]);
+      pending = j.pending + j.failed.length + w.pending + w.failed.length;
+    } catch (err) {
+      Alert.alert('Gagal', err instanceof Error ? err.message : String(err));
+      return;
+    }
     Alert.alert(
       'Bersihkan Cache',
-      'Tindakan ini akan mengosongkan cache penyimpanan lokal offline di perangkat ini. Data cloud tetap aman.',
+      pending > 0
+        ? `PERINGATAN: ${pending} perubahan belum tersinkron ke cloud dan akan hilang permanen.`
+        : 'Cache lokal perangkat ini akan dikosongkan. Data cloud tetap aman.',
       [
         { text: 'Batal', style: 'cancel' },
         {
-          text: 'Bersihkan',
+          text: pending > 0 ? 'Buang & Bersihkan' : 'Bersihkan',
           style: 'destructive',
           onPress: async () => {
             setIsClearing(true);
             try {
               await Promise.all([
-                journalRepository.clearUserCache(currentUser.uid),
-                wishlistRepository.clearUserCache(currentUser.uid),
-                userPreferencesRepository.clearUserCache(currentUser.uid),
-                userProfileRepository.clearUserCache(currentUser.uid),
+                journalRepository.clearUserCache(uid),
+                wishlistRepository.clearUserCache(uid),
+                userPreferencesRepository.clearUserCache(uid),
+                userProfileRepository.clearUserCache(uid),
               ]);
               Alert.alert('Sukses', 'Cache lokal berhasil dibersihkan.');
-            } catch {
-              Alert.alert('Gagal', 'Terjadi kesalahan saat membersihkan cache.');
+            } catch (err) {
+              Alert.alert('Gagal', err instanceof Error ? err.message : String(err));
             } finally {
               setIsClearing(false);
             }
@@ -55,35 +72,26 @@ export default function DataSupportSettingsRoute() {
     );
   };
 
+  /** Real export: the full JSON archive is handed to the OS share sheet. */
   const handleExportData = async () => {
     if (!currentUser?.uid) return;
     try {
-      const [journals, wishlist] = await Promise.all([
+      const [journals, wishlist, settings] = await Promise.all([
         journalRepository.getJournals(currentUser.uid),
         wishlistRepository.getWishlist(currentUser.uid),
+        userPreferencesRepository.getSettings(currentUser.uid),
       ]);
-
-      const totalSpent = journals.reduce((sum, j) => sum + (j.totalSpent || 0), 0);
-      const formattedSpent = new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        maximumFractionDigits: 0,
-      }).format(totalSpent);
-
-      Alert.alert(
-        'Ekspor Data Jurnal Berhasil 📦',
-        `Ringkasan Arsip Pribadi:\n• Total Jurnal: ${journals.length} entri\n• Total Wishlist: ${wishlist.length} tempat\n• Estimasi Belanja: ${formattedSpent}\n\nSeluruh data terenkripsi dan hanya milik akun ${currentUser.email || currentUser.displayName}.`,
-        [{ text: 'Tutup' }]
-      );
-    } catch {
-      Alert.alert('Gagal Ekspor', 'Tidak dapat mengambil arsip data saat ini.');
+      const archive = buildExportArchive(currentUser, journals, wishlist, settings);
+      await Share.share({ title: 'MouthJournal export', message: JSON.stringify(archive, null, 2) });
+    } catch (err) {
+      Alert.alert('Gagal Ekspor', err instanceof Error ? err.message : String(err));
     }
   };
 
   const showHelpFAQ = () => {
     Alert.alert(
       'Bantuan & FAQ',
-      '1. Bagaimana cara menambah jurnal baru?\nKetuk tombol (+) di bilah navigasi bawah.\n\n2. Apakah foto makanan saya publik?\nTidak, MouthJournal 100% privat.\n\n3. Bagaimana cara kerja pencarian kafe Explore?\nPeta mendeteksi tempat sekitar melalui OpenStreetMap tanpa melacak data pribadi Anda.',
+      '1. Bagaimana cara menambah jurnal baru?\nKetuk tombol (+) di bilah navigasi bawah.\n\n2. Apakah foto makanan saya publik?\nTidak. Jurnal disimpan di akun Firebase Anda dan hanya dapat dibaca oleh akun Anda (aturan keamanan Firestore).\n\n3. Bagaimana cara kerja pencarian kafe Explore?\nPeta mendeteksi tempat sekitar melalui OpenStreetMap tanpa melacak data pribadi Anda.',
       [{ text: 'Mengerti' }]
     );
   };

@@ -245,7 +245,6 @@ export const EditJournalScreen: React.FC<EditJournalScreenProps> = ({
       ),
       reviewText,
       tags,
-      isPublic: false,
       visitedAt: new Date().toISOString(),
       createdAt: journal?.createdAt || new Date().toISOString(),
     };

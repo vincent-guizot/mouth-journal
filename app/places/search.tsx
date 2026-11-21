@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -22,29 +22,44 @@ export default function PlacesSearchRoute() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<NearbyPlace[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const requestRef = useRef(0);
 
-  const handleSearch = async (text: string) => {
-    setQuery(text);
-    if (text.trim().length < 2) {
-      setResults([]);
-      return;
-    }
-
+  const runSearch = async (text: string) => {
+    const requestId = ++requestRef.current;
     setIsSearching(true);
     try {
-      const places = await placesService.searchPlaces(
-        userLocation.latitude,
-        userLocation.longitude,
-        5000,
-        text.trim()
-      );
+      const places = await placesService.searchPlaces(userLocation.latitude, userLocation.longitude, 5000, text);
+      if (requestId !== requestRef.current) return; // a newer query superseded this one
       setResults(places);
+      setError(null);
     } catch (err) {
-      console.warn('Search error:', err);
+      if (requestId !== requestRef.current) return;
+      setResults([]);
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
+      if (requestId === requestRef.current) setIsSearching(false);
+    }
+  };
+
+  // Debounced: one Overpass request per pause in typing (OSM usage policy).
+  const onChangeQuery = (text: string) => {
+    setQuery(text);
+    if (text.trim().length < 2) {
+      requestRef.current++;
+      setResults([]);
+      setError(null);
       setIsSearching(false);
     }
   };
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) return;
+    const t = setTimeout(() => runSearch(q), 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, userLocation.latitude, userLocation.longitude]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -63,7 +78,7 @@ export default function PlacesSearchRoute() {
             placeholder="Cari kafe, resto, atau kuliner..."
             placeholderTextColor="#9E8579"
             value={query}
-            onChangeText={handleSearch}
+            onChangeText={onChangeQuery}
             autoFocus
           />
         </View>
@@ -80,9 +95,13 @@ export default function PlacesSearchRoute() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={
-          !isSearching && query.length >= 2 ? (
+          error ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Tidak ditemukan tempat untuk "{query}".</Text>
+              <Text style={styles.emptyText}>Pencarian gagal: {error}</Text>
+            </View>
+          ) : !isSearching && query.trim().length >= 2 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>Tidak ditemukan tempat untuk &quot;{query}&quot;.</Text>
             </View>
           ) : undefined
         }
@@ -106,7 +125,7 @@ export default function PlacesSearchRoute() {
             <View style={styles.itemInfo}>
               <Text style={styles.placeName}>{item.name}</Text>
               <Text style={styles.placeAddress} numberOfLines={1}>
-                {item.address}
+                {item.address || item.subCategoryLabel}
               </Text>
             </View>
           </TouchableOpacity>

@@ -22,11 +22,8 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({
     year: 'numeric',
   });
 
-  const photoCount = entry.photoUrls?.length || 1;
+  const photoCount = entry.photoUrls.length;
 
-  // Gambar default jika menu item belum punya foto spesifik
-  const defaultMenuImg1 = 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=150&auto=format&fit=crop&q=80';
-  const defaultMenuImg2 = 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=150&auto=format&fit=crop&q=80';
 
   return (
     <TouchableOpacity
@@ -36,20 +33,17 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({
     >
       {/* 1. Kolom Kiri: Foto Utama dengan Badge Jumlah Foto */}
       <View style={styles.imageCol}>
-        <Image
-          source={{
-            uri:
-              entry.photoUrls && entry.photoUrls.length > 0
-                ? entry.photoUrls[0]
-                : 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&auto=format&fit=crop&q=80',
-          }}
-          style={styles.mainImage}
-          resizeMode="cover"
-        />
+        {photoCount > 0 ? (
+          <Image source={{ uri: entry.photoUrls[0] }} style={styles.mainImage} resizeMode="cover" />
+        ) : (
+          <View style={[styles.mainImage, { backgroundColor: '#FAF5EE' }]} />
+        )}
+        {photoCount > 0 && (
         <View style={styles.photoCountBadge}>
           <Images size={11} color="#FFFFFF" />
           <Text style={styles.photoCountText}>{photoCount}</Text>
         </View>
+        )}
       </View>
 
       {/* 2. Kolom Kanan: Detail Tempat, Rating, Menu & Catatan */}
@@ -92,10 +86,11 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({
           <View style={styles.miniMenuRow}>
             {entry.menuItems.slice(0, 2).map((item, idx) => (
               <View key={item.id || idx} style={styles.miniMenuCard}>
-                <Image
-                  source={{ uri: idx === 0 ? defaultMenuImg1 : defaultMenuImg2 }}
-                  style={styles.miniMenuImg}
-                />
+                {item.photoUrl ? (
+                  <Image source={{ uri: item.photoUrl }} style={styles.miniMenuImg} />
+                ) : (
+                  <View style={[styles.miniMenuImg, { backgroundColor: '#FAF5EE' }]} />
+                )}
                 <View style={styles.miniMenuInfo}>
                   <Text style={styles.miniMenuName} numberOfLines={1}>
                     {item.name}

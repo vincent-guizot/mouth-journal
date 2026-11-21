@@ -64,6 +64,7 @@ export default function App() {
     district: "Senopati",
     address: "Senopati, Jakarta Selatan",
   });
+  const [isRefreshingLocation, setIsRefreshingLocation] = useState(false);
   const [isAddLogOpen, setIsAddLogOpen] = useState(false);
   const [selectedPlaceForLog, setSelectedPlaceForLog] =
     useState<NearbyPlace | null>(null);
@@ -81,6 +82,15 @@ export default function App() {
     boolean | null
   >(null);
   const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState(false);
+
+  const refreshUserLocation = async () => {
+    setIsRefreshingLocation(true);
+    try {
+      setUserLocation(await LocationService.getCurrentLocation());
+    } finally {
+      setIsRefreshingLocation(false);
+    }
+  };
 
   // Load User & GPS Location on startup
   useEffect(() => {
@@ -100,8 +110,7 @@ export default function App() {
       if (user) setCurrentUser(user);
 
       // Load GPS location
-      const loc = await LocationService.getCurrentLocation();
-      setUserLocation(loc);
+      await refreshUserLocation();
     };
 
     initApp();
@@ -223,6 +232,8 @@ export default function App() {
             <ExploreScreen
               userLocation={userLocation}
               userId={currentUser.uid}
+              onRefreshLocation={refreshUserLocation}
+              isRefreshingLocation={isRefreshingLocation}
               onPlaceSelect={(place) => setSelectedPlaceForDetail(place)}
               onAddDiaryForPlace={handleOpenAddLogWithPlace}
             />

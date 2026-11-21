@@ -11,10 +11,10 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  userAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  userAvatar,
   onNotificationPress,
   onProfilePress,
-  hasUnreadNotifications = true,
+  hasUnreadNotifications = false,
 }) => {
   return (
     <View style={styles.container}>
@@ -43,7 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
           activeOpacity={0.85}
           style={styles.avatarWrapper}
         >
-          <Image source={{ uri: userAvatar }} style={styles.avatarImage} />
+          {userAvatar ? <Image source={{ uri: userAvatar }} style={styles.avatarImage} /> : <View style={[styles.avatarImage, { backgroundColor: '#EFE6DC' }]} />}
         </TouchableOpacity>
       </View>
     </View>

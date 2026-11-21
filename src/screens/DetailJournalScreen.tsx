@@ -17,7 +17,6 @@ import {
   ArrowLeft,
   Share2,
   Pencil,
-  EllipsisVertical,
   Image as ImageIcon,
   MapPin,
   Coffee,
@@ -35,7 +34,7 @@ import {
 } from 'lucide-react-native';
 
 interface DetailJournalScreenProps {
-  journal?: DiaryEntry | null;
+  journal: DiaryEntry;
   onBack: () => void;
   onEdit?: (journal: DiaryEntry) => void;
   onOpenMap?: () => void;
@@ -49,88 +48,32 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
   onOpenMap,
   onOpenPlaceDetail,
 }) => {
-  // Gallery photos
-  const defaultPhotos = [
-    'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200&auto=format&fit=crop&q=80', // Hero table with latte & croissant
-    'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=800&auto=format&fit=crop&q=80', // Latte art
-    'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=800&auto=format&fit=crop&q=80', // Croissant
-    'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=800&auto=format&fit=crop&q=80', // Iced Americano
-    'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80', // Cafe facade
-  ];
-
-  const photos =
-    journal?.photoUrls && journal.photoUrls.length >= 3
-      ? journal.photoUrls
-      : defaultPhotos;
-
+  const photos = journal.photoUrls;
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [isPhotoViewerOpen, setIsPhotoViewerOpen] = useState(false);
 
-  const placeName = journal?.placeName || 'Tanamera Coffee Roastery';
-  const placeAddress = journal?.placeAddress || 'Senopati, Jakarta Selatan';
-  const categoryLabel = journal?.subCategoryLabel || 'Kopi/Cafe';
-  const overallRating = journal?.overallRating || 4.2;
-  const visitDateLabel = new Date(journal?.visitedAt || Date.now()).toLocaleDateString('id-ID', {
+  const placeName = journal.placeName;
+  const placeAddress = journal.placeAddress || 'Alamat tidak dicatat';
+  const categoryLabel = journal.subCategoryLabel;
+  const overallRating = journal.overallRating.toFixed(1);
+  const visitDateLabel = new Date(journal.visitedAt).toLocaleDateString('id-ID', {
     weekday: 'long',
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   });
-  const reviewText =
-    journal?.reviewText ||
-    'Tempatnya nyaman, kopi nya enak, croissantnya juga flaky banget. Cocok buat kerja sambil ngopi. Suasana nya tenang dan pelayanan ramah. Pasti akan balik lagi!';
-
-  const criteria = journal?.criteriaRating || {
-    taste: 4.5,
-    ambiance: 4.5,
-    service: 4.0,
-    price: 4.5,
-  };
-
-  const menuItems =
-    journal?.menuItems && journal.menuItems.length > 0
-      ? journal.menuItems
-      : [
-          {
-            id: 'm1',
-            name: 'Latte',
-            price: 45000,
-            rating: 5.0,
-            photo:
-              'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=300&auto=format&fit=crop&q=80',
-            desc: 'Latte art cantik, rasa creamy dan tidak terlalu pahit.',
-          },
-          {
-            id: 'm2',
-            name: 'Croissant',
-            price: 38000,
-            rating: 4.0,
-            photo:
-              'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=300&auto=format&fit=crop&q=80',
-            desc: 'Renyah di luar, lembut di dalam. Cocok banget dengan latte.',
-          },
-          {
-            id: 'm3',
-            name: 'Ice Americano',
-            price: 35000,
-            rating: 4.0,
-            photo:
-              'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=300&auto=format&fit=crop&q=80',
-            desc: 'Segar dan tidak terlalu asam.',
-          },
-        ];
-
-  const tags = journal?.tags && journal.tags.length > 0
-    ? journal.tags
-    : ['Kopi/Cafe', 'Sarapan', 'Meeting', 'Teman'];
+  const reviewText = journal.reviewText || 'Belum ada catatan.';
+  const criteria = journal.criteriaRating;
+  const menuItems = journal.menuItems;
+  const tags = journal.tags;
 
   const handleShare = async () => {
     try {
       await Share.share({
         message: `MouthJournal: Mengunjungi ${placeName} (${placeAddress}). Rating: ${overallRating} ⭐\n"${reviewText}"`,
       });
-    } catch {
-      // Ignored
+    } catch (err) {
+      Alert.alert('Gagal membagikan', err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -165,13 +108,14 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
         <View style={styles.heroContainer}>
           <TouchableOpacity
             style={styles.heroImageTouch}
-            onPress={() => setIsPhotoViewerOpen(true)}
+            onPress={() => photos.length > 0 && setIsPhotoViewerOpen(true)}
             activeOpacity={0.95}
           >
-            <Image
-              source={{ uri: photos[selectedPhotoIndex] || photos[0] }}
-              style={styles.heroImage}
-            />
+            {photos.length > 0 ? (
+              <Image source={{ uri: photos[selectedPhotoIndex] ?? photos[0] }} style={styles.heroImage} />
+            ) : (
+              <View style={[styles.heroImage, { backgroundColor: '#EFE6DC' }]} />
+            )}
             {/* Scrim/Dark Gradient Overlay */}
             <View style={styles.heroScrimOverlay} />
           </TouchableOpacity>
@@ -197,29 +141,17 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
 
               <TouchableOpacity
                 style={styles.iconCircleBtn}
-                onPress={() => journal && onEdit && onEdit(journal)}
+                onPress={() => onEdit && onEdit(journal)}
                 activeOpacity={0.8}
               >
                 <Pencil size={18} color="#4E2E21" />
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.iconCircleBtn}
-                onPress={() =>
-                  Alert.alert('Opsi Jurnal', 'Pilih opsi:', [
-                    { text: 'Batal', style: 'cancel' },
-                    { text: 'Bagikan ke Feed Publik', onPress: () => {} },
-                    { text: 'Hapus Jurnal', style: 'destructive', onPress: onBack },
-                  ])
-                }
-                activeOpacity={0.8}
-              >
-                <EllipsisVertical size={18} color="#4E2E21" />
-              </TouchableOpacity>
             </View>
           </View>
 
           {/* Photo Count Badge */}
+          {photos.length > 0 && (
           <TouchableOpacity
             style={styles.photoCountBadge}
             onPress={() => setIsPhotoViewerOpen(true)}
@@ -230,6 +162,7 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
               {selectedPhotoIndex + 1} / {photos.length}
             </Text>
           </TouchableOpacity>
+          )}
 
           {/* Layered Content: Nama Tempat, Kategori, Rating, Rute & Bagikan */}
           <View style={styles.heroBottomLayer}>
@@ -242,7 +175,6 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
               <View style={styles.heroRatingBadge}>
                 <Star size={12} color="#F39A28" fill="#F39A28" />
                 <Text style={styles.heroRatingText}>{overallRating}</Text>
-                <Text style={styles.heroVotesText}>(1.2K)</Text>
               </View>
             </View>
 
@@ -323,34 +255,23 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
                 </View>
                 <View>
                   <Text style={styles.sectionTitle}>Menu yang Dicoba</Text>
-                  <Text style={styles.sectionSubtitle}>{menuItems.length} menu diunggah</Text>
+                  <Text style={styles.sectionSubtitle}>{menuItems.length} menu dicatat</Text>
                 </View>
               </View>
 
-              <TouchableOpacity
-                style={styles.menuPlaceBtn}
-                onPress={onOpenPlaceDetail}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.menuPlaceBtnText}>Lihat Semua Menu</Text>
-              </TouchableOpacity>
+              {onOpenPlaceDetail && (
+                <TouchableOpacity style={styles.menuPlaceBtn} onPress={onOpenPlaceDetail} activeOpacity={0.8}>
+                  <Text style={styles.menuPlaceBtnText}>Lihat Tempat</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Menu List */}
             <View style={styles.menuList}>
               {menuItems.map((item, index) => {
-                const itemRating =
-                  'rating' in item && typeof item.rating === 'number'
-                    ? item.rating
-                    : 4.5;
-                const itemPhoto =
-                  'photo' in item && typeof item.photo === 'string'
-                    ? item.photo
-                    : photos[index % photos.length];
-                const itemDesc =
-                  'desc' in item && typeof item.desc === 'string'
-                    ? item.desc
-                    : 'Menu rekomendasi pilihan dengan cita rasa khas.';
+                const itemRating = item.rating;
+                const itemPhoto = item.photoUrl;
+                const itemDesc = item.notes ?? '';
 
                 const formattedPrice = new Intl.NumberFormat('id-ID', {
                   style: 'currency',
@@ -366,23 +287,27 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
                     onPress={() =>
                       Alert.alert(
                         item.name,
-                        `${formattedPrice}\n\n${itemDesc}`
+                        itemDesc ? `${formattedPrice}\n\n${itemDesc}` : formattedPrice
                       )
                     }
                   >
-                    <Image source={{ uri: itemPhoto }} style={styles.menuThumb} />
+                    {itemPhoto ? (
+                      <Image source={{ uri: itemPhoto }} style={styles.menuThumb} />
+                    ) : (
+                      <View style={[styles.menuThumb, { backgroundColor: '#FAF5EE' }]} />
+                    )}
 
                     <View style={styles.menuDetails}>
                       <View style={styles.menuTopLine}>
                         <Text style={styles.menuName}>{item.name}</Text>
                         <Text style={styles.menuPrice}>{formattedPrice}</Text>
                       </View>
-                      <View style={styles.menuStarGroup}>
-                        {renderStars(itemRating)}
-                        <Text style={styles.menuRatingNumber}>
-                          {itemRating.toFixed(1)}
-                        </Text>
-                      </View>
+                      {itemRating !== undefined ? (
+                        <View style={styles.menuStarGroup}>
+                          {renderStars(itemRating)}
+                          <Text style={styles.menuRatingNumber}>{itemRating.toFixed(1)}</Text>
+                        </View>
+                      ) : null}
 
                       <Text style={styles.menuDesc} numberOfLines={2}>
                         {itemDesc}
@@ -441,12 +366,7 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
                 </View>
               ))}
 
-              <TouchableOpacity
-                style={styles.tagBadgeAdd}
-                onPress={() =>
-                  Alert.alert('Tambah Tag', 'Ketikkan tag baru untuk jurnal ini.')
-                }
-              >
+              <TouchableOpacity style={styles.tagBadgeAdd} onPress={() => onEdit && onEdit(journal)}>
                 <Plus size={13} color="#D04A1E" />
                 <Text style={styles.tagBadgeAddText}>Tambah Tag</Text>
               </TouchableOpacity>
@@ -501,7 +421,7 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
 
               <TouchableOpacity
                 style={styles.editReviewBtn}
-                onPress={() => journal && onEdit && onEdit(journal)}
+                onPress={() => onEdit && onEdit(journal)}
                 activeOpacity={0.8}
               >
                 <Pencil size={11} color="#4E2E21" />
@@ -525,7 +445,7 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
                 <Text style={styles.metaSmallLabel}>Visibilitas</Text>
                 <View style={styles.metaPublicRow}>
                   <Globe size={11} color="#6B3F2E" />
-                  <Text style={styles.metaSmallValue}>Publik</Text>
+                  <Text style={styles.metaSmallValue}>Privat</Text>
                 </View>
               </View>
             </View>
@@ -534,7 +454,11 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
             <TouchableOpacity
               style={styles.metaSmallCard}
               onPress={() =>
-                Alert.alert('Informasi Tambahan', 'Jurnal ini dibuat dengan MouthJournal Mobile App.')
+                Alert.alert(
+                  'Info Jurnal',
+                  `Dibuat: ${new Date(journal.createdAt).toLocaleString('id-ID')}` +
+                    (journal.updatedAt ? `\nDiperbarui: ${new Date(journal.updatedAt).toLocaleString('id-ID')}` : '')
+                )
               }
               activeOpacity={0.8}
             >
@@ -558,6 +482,7 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
         onRequestClose={() => setIsPhotoViewerOpen(false)}
       >
         <PhotoViewerScreen
+          visible={isPhotoViewerOpen}
           photos={photos}
           initialIndex={selectedPhotoIndex}
           journal={journal}

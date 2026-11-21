@@ -1,434 +1,187 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  Linking,
-  Alert,
-} from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Linking, Alert, Share } from 'react-native';
 import { NearbyPlace } from '../types/places';
 import { theme } from '../config/theme';
-import {
-  ArrowLeft,
-  Images,
-  Star,
-  Navigation,
-  Bookmark,
-  Share2,
-  BookmarkPlus,
-  MapPin,
-  Clock,
-  Phone,
-  Globe,
-  ChevronDown,
-  Copy,
-  ExternalLink,
-  Map as MapIcon,
-  Edit3,
-  Sparkles,
-  Lightbulb,
-  CheckCircle2,
-} from 'lucide-react-native';
+import { formatDistance } from '../utils/geo';
+import { ArrowLeft, Star, Navigation, Bookmark, Share2, MapPin, Clock, Phone, Globe, ExternalLink, Edit3 } from 'lucide-react-native';
 
 interface DetailPlaceScreenProps {
   place: NearbyPlace;
+  isWishlisted: boolean;
   onBack: () => void;
   onWriteJournal: (place: NearbyPlace) => void;
-  onToggleWishlist?: (place: NearbyPlace) => void;
+  onToggleWishlist: () => void;
 }
 
+/**
+ * Shows only data that exists for this place (OpenStreetMap tags). No invented
+ * ratings, reviews, menus, phone numbers, websites or "similar places".
+ */
 export const DetailPlaceScreen: React.FC<DetailPlaceScreenProps> = ({
   place,
+  isWishlisted,
   onBack,
   onWriteJournal,
   onToggleWishlist,
 }) => {
-  const [activeTab, setActiveTab] = useState<'ringkasan' | 'menu' | 'foto' | 'ulasan'>('ringkasan');
-  const [isSaved, setIsSaved] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const fallbackImage =
-    place.photoUrl ||
-    (place.mainCategory === 'drinks'
-      ? 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&auto=format&fit=crop&q=80'
-      : place.mainCategory === 'wisata'
-      ? 'https://images.unsplash.com/photo-1519331379826-f10be5486c6f?w=800&auto=format&fit=crop&q=80'
-      : 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80');
-
-  const popularMenus = [
-    {
-      name: place.mainCategory === 'wisata' ? 'Tiket Masuk Reguler' : 'Latte',
-      price: place.mainCategory === 'wisata' ? 25000 : 45000,
-      image: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=300&auto=format&fit=crop&q=80',
-    },
-    {
-      name: place.mainCategory === 'wisata' ? 'Sewa Tikar Piknik' : 'Cappuccino',
-      price: place.mainCategory === 'wisata' ? 20000 : 42000,
-      image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=300&auto=format&fit=crop&q=80',
-    },
-    {
-      name: place.mainCategory === 'wisata' ? 'Paket Foto / Spot' : 'Croissant',
-      price: place.mainCategory === 'wisata' ? 50000 : 38000,
-      image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=300&auto=format&fit=crop&q=80',
-    },
-    {
-      name: place.mainCategory === 'wisata' ? 'Minuman Dingin' : 'Ice Americano',
-      price: place.mainCategory === 'wisata' ? 15000 : 35000,
-      image: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=300&auto=format&fit=crop&q=80',
-    },
-  ];
-
-  const aiMenus = [
-    {
-      name: 'Signature Latte',
-      price: 42000,
-      reason: 'Sering dicoba oleh pengguna dengan selera seperti kamu.',
-      image: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      name: 'Almond Croissant',
-      price: 45000,
-      reason: 'Cocok dengan preferensi pastry kamu.',
-      image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      name: 'Truffle Pasta',
-      price: 98000,
-      reason: 'Populer di kalangan pencinta savory food.',
-      image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400&auto=format&fit=crop&q=80',
-    },
-  ];
-
-  const similarPlaces = [
-    {
-      name: 'Giyanti Coffee Roastery',
-      rating: 4.6,
-      count: 960,
-      area: 'Menteng, Jakarta Pusat',
-      image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      name: 'Titik Temu Coffee',
-      rating: 4.5,
-      count: 760,
-      area: 'Cipete, Jakarta Selatan',
-      image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      name: 'Sawo Kecik Restoran',
-      rating: 4.4,
-      count: 540,
-      area: 'Blok M, Jakarta Selatan',
-      image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&auto=format&fit=crop&q=80',
-    },
-  ];
-
-  const handleOpenMaps = () => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${place.latitude},${place.longitude}`;
-    Linking.openURL(url);
+  const openUrl = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch (err) {
+      Alert.alert('Tidak dapat membuka tautan', err instanceof Error ? err.message : String(err));
+    }
   };
 
-  const handleCopyPhone = () => {
-    Alert.alert('Nomor Telepon Disalin', place.phone || '+62 21 7278 1234');
-  };
+  const mapsUrl = `https://www.openstreetmap.org/?mlat=${place.latitude}&mlon=${place.longitude}#map=18/${place.latitude}/${place.longitude}`;
+  const routeUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${place.latitude},${place.longitude}`)}`;
 
-  const handleOpenWebsite = () => {
-    Linking.openURL('https://tanamera.id');
+  const handleShare = async () => {
+    try {
+      await Share.share({ message: `${place.name}${place.address ? ` — ${place.address}` : ''}\n${mapsUrl}` });
+    } catch (err) {
+      Alert.alert('Gagal membagikan', err instanceof Error ? err.message : String(err));
+    }
   };
 
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* 1. Hero Image Section */}
         <View style={styles.heroContainer}>
-          <Image source={{ uri: fallbackImage }} style={styles.heroImage} resizeMode="cover" />
-
-          {/* Floating Back Button */}
-          <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.8}>
+          {place.photoUrl ? (
+            <Image source={{ uri: place.photoUrl }} style={styles.heroImage} resizeMode="cover" />
+          ) : (
+            <View style={[styles.heroImage, { alignItems: 'center', justifyContent: 'center' }]}>
+              <MapPin size={42} color={theme.colors.terracotta} />
+            </View>
+          )}
+          <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.8} accessibilityLabel="Kembali">
             <ArrowLeft size={20} color={theme.colors.coffeeBrown} />
           </TouchableOpacity>
-
-          {/* Image Counter Badge */}
-          <View style={styles.photoBadge}>
-            <Images size={12} color="#FFFFFF" />
-            <Text style={styles.photoBadgeText}>1/10</Text>
-          </View>
         </View>
 
-        {/* 2. Place Info Header */}
         <View style={styles.mainInfo}>
           <View style={styles.titleRow}>
             <Text style={styles.placeTitle}>{place.name}</Text>
-            <View style={styles.categoryPill}>
-              <Text style={styles.categoryText}>
-                {place.subCategoryLabel || (place.mainCategory === 'drinks' ? 'Kopi/Cafe' : 'Restoran')}
-              </Text>
-            </View>
+            {place.subCategoryLabel ? (
+              <View style={styles.categoryPill}>
+                <Text style={styles.categoryText}>{place.subCategoryLabel}</Text>
+              </View>
+            ) : null}
           </View>
-
-          {/* Rating */}
           <View style={styles.ratingRow}>
-            {[1, 2, 3, 4, 5].map((s) => (
-              <Star key={s} size={15} color={theme.colors.caramel} fill={theme.colors.caramel} />
-            ))}
-            <Text style={styles.ratingScore}>{place.ratingAverage || 4.2}</Text>
-            <Text style={styles.reviewCount}>({place.userVisitedCount ? `${place.userVisitedCount}K` : '1.2K'} ulasan)</Text>
+            {place.ratingAverage !== undefined ? (
+              <>
+                <Star size={15} color={theme.colors.caramel} fill={theme.colors.caramel} />
+                <Text style={styles.ratingScore}>{place.ratingAverage.toFixed(1)}</Text>
+                {place.ratingCount !== undefined && <Text style={styles.reviewCount}>({place.ratingCount} ulasan)</Text>}
+              </>
+            ) : (
+              <Text style={styles.reviewCount}>Belum ada rating untuk tempat ini</Text>
+            )}
+            {place.distanceMeter !== undefined && <Text style={styles.reviewCount}> · {formatDistance(place.distanceMeter)}</Text>}
           </View>
         </View>
 
-        {/* 3. 4 Action Circular Buttons */}
         <View style={styles.actionRow}>
-          <TouchableOpacity style={styles.actionBtnItem} onPress={handleOpenMaps}>
+          <TouchableOpacity style={styles.actionBtnItem} onPress={() => openUrl(routeUrl)}>
             <View style={styles.actionIconCircle}>
               <Navigation size={18} color={theme.colors.coffeeBrown} />
             </View>
             <Text style={styles.actionLabel}>Rute</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionBtnItem}
-            onPress={() => {
-              setIsSaved(!isSaved);
-              if (onToggleWishlist) onToggleWishlist(place);
-            }}
-          >
-            <View style={[styles.actionIconCircle, isSaved && styles.actionIconCircleActive]}>
+          <TouchableOpacity style={styles.actionBtnItem} onPress={onToggleWishlist}>
+            <View style={[styles.actionIconCircle, isWishlisted && styles.actionIconCircleActive]}>
               <Bookmark
                 size={18}
-                color={isSaved ? '#FFFFFF' : theme.colors.coffeeBrown}
-                fill={isSaved ? theme.colors.terracotta : 'transparent'}
+                color={isWishlisted ? '#FFFFFF' : theme.colors.coffeeBrown}
+                fill={isWishlisted ? theme.colors.terracotta : 'transparent'}
               />
             </View>
-            <Text style={styles.actionLabel}>{isSaved ? 'Tersimpan' : 'Simpan'}</Text>
+            <Text style={styles.actionLabel}>{isWishlisted ? 'Di Wishlist' : 'Simpan'}</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionBtnItem}
-            onPress={() => Alert.alert('Bagikan', `Bagikan link rekomendasi ${place.name} ke teman.`)}
-          >
+          <TouchableOpacity style={styles.actionBtnItem} onPress={handleShare}>
             <View style={styles.actionIconCircle}>
               <Share2 size={18} color={theme.colors.coffeeBrown} />
             </View>
             <Text style={styles.actionLabel}>Bagikan</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionBtnItem}
-            onPress={() => {
-              if (onToggleWishlist) onToggleWishlist(place);
-              Alert.alert('Wishlist', `"${place.name}" ditambahkan ke Wishlist Anda!`);
-            }}
-          >
-            <View style={styles.actionIconCircle}>
-              <BookmarkPlus size={18} color={theme.colors.coffeeBrown} />
-            </View>
-            <Text style={styles.actionLabel}>Tambah ke Wishlist</Text>
-          </TouchableOpacity>
         </View>
 
-        {/* 4. Tab Segment Header */}
-        <View style={styles.tabBar}>
-          {(['ringkasan', 'menu', 'foto', 'ulasan'] as const).map((tab) => {
-            const isActive = activeTab === tab;
-            const labels: Record<string, string> = {
-              ringkasan: 'Ringkasan',
-              menu: 'Menu',
-              foto: 'Foto',
-              ulasan: 'Ulasan',
-            };
-            return (
-              <TouchableOpacity
-                key={tab}
-                style={[styles.tabButton, isActive && styles.tabButtonActive]}
-                onPress={() => setActiveTab(tab)}
-              >
-                <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
-                  {labels[tab]}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* 5. Detail Info Rows */}
         <View style={styles.detailsCard}>
-          {/* Alamat */}
           <View style={styles.infoRow}>
             <MapPin size={18} color={theme.colors.terracotta} style={styles.infoIcon} />
             <View style={styles.infoTextContainer}>
-              <Text style={styles.infoTitle}>
-                {place.address ? place.address.split(',')[0] : 'Senopati, Jakarta Selatan'}
-              </Text>
+              <Text style={styles.infoTitle}>{place.address || 'Alamat tidak tercatat di OpenStreetMap'}</Text>
               <Text style={styles.infoSubtitle}>
-                {place.address || 'Jl. Senopati No. 72, Kebayoran Baru, Jakarta Selatan 12190'}
+                {place.latitude.toFixed(5)}, {place.longitude.toFixed(5)}
               </Text>
             </View>
-            <TouchableOpacity onPress={handleOpenMaps} style={styles.rowActionBtn}>
-              <MapIcon size={18} color={theme.colors.coffeeBrown} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Jam Operasional */}
-          <View style={styles.infoRow}>
-            <Clock size={18} color={theme.colors.coffeeBrown} style={styles.infoIcon} />
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoOpenText}>
-                Buka sekarang · <Text style={{ color: theme.colors.espresso }}>07.00 – 22.00</Text>
-              </Text>
-            </View>
-            <TouchableOpacity style={styles.rowActionBtn}>
-              <ChevronDown size={18} color={theme.colors.textTertiary} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Telepon */}
-          <View style={styles.infoRow}>
-            <Phone size={18} color={theme.colors.coffeeBrown} style={styles.infoIcon} />
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoTitle}>{place.phone || '+62 21 7278 1234'}</Text>
-            </View>
-            <TouchableOpacity onPress={handleCopyPhone} style={styles.rowActionBtn}>
-              <Copy size={16} color={theme.colors.coffeeBrown} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Website */}
-          <View style={styles.infoRow}>
-            <Globe size={18} color={theme.colors.coffeeBrown} style={styles.infoIcon} />
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoLinkText}>https://tanamera.id</Text>
-            </View>
-            <TouchableOpacity onPress={handleOpenWebsite} style={styles.rowActionBtn}>
+            <TouchableOpacity onPress={() => openUrl(mapsUrl)} style={styles.rowActionBtn}>
               <ExternalLink size={16} color={theme.colors.coffeeBrown} />
             </TouchableOpacity>
           </View>
-        </View>
 
-        {/* 6. Deskripsi Tempat */}
-        <View style={styles.descSection}>
-          <Text style={styles.descText} numberOfLines={isExpanded ? undefined : 2}>
-            {place.cuisine
-              ? `${place.name} menyajikan pilihan istimewa: ${place.cuisine}. Suasana sangat nyaman untuk nongkrong, bekerja santai, atau kumpul bersama teman.`
-              : 'Coffee roastery yang terkenal dengan biji kopi lokal berkualitas dan suasana yang nyaman. Cocok untuk ngopi, bekerja, atau sekadar bersantai bersama teman.'}
-          </Text>
-          <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)} style={styles.expandRow}>
-            <Text style={styles.expandText}>{isExpanded ? 'Tutup kembali ⌃' : 'Lihat selengkapnya ⌄'}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 7. Menu Populer */}
-        <View style={styles.popularMenuSection}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>
-              {place.mainCategory === 'wisata' ? 'Aktivitas Populer' : 'Menu Populer'}
-            </Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>Lihat Semua &gt;</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.menuScroll}>
-            {popularMenus.map((item, idx) => (
-              <View key={idx} style={styles.menuItemCard}>
-                <Image source={{ uri: item.image }} style={styles.menuItemImage} />
-                <Text style={styles.menuItemName} numberOfLines={1}>
-                  {item.name}
-                </Text>
-                <Text style={styles.menuItemPrice}>Rp {item.price.toLocaleString('id-ID')}</Text>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* AI Recommendations Section [BETA] (Matching Screen 2) */}
-        <View style={styles.aiSection}>
-          <View style={styles.aiHeaderRow}>
-            <View style={styles.aiHeaderTitleGroup}>
-              <Sparkles size={16} color="#D04A1E" />
-              <Text style={styles.aiHeaderTitle}>AI Recommendations</Text>
-              <View style={styles.betaBadge}>
-                <Text style={styles.betaBadgeText}>BETA</Text>
-              </View>
-            </View>
-          </View>
-          <Text style={styles.aiHeaderSubtitle}>
-            Rekomendasi menu dan informasi berdasarkan preferensi dan pengalaman kuliner kamu.
-          </Text>
-
-          {/* AI Recommended Menus */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.aiMenuScroll}>
-            {aiMenus.map((item, idx) => (
-              <View key={idx} style={styles.aiMenuCard}>
-                <Image source={{ uri: item.image }} style={styles.aiMenuImage} />
-                <Text style={styles.aiMenuName} numberOfLines={1}>{item.name}</Text>
-                <Text style={styles.aiMenuReason} numberOfLines={2}>{item.reason}</Text>
-                <Text style={styles.aiMenuPrice}>Rp {item.price.toLocaleString('id-ID')}</Text>
-              </View>
-            ))}
-          </ScrollView>
-
-          {/* Kenapa direkomendasikan box */}
-          <View style={styles.whyBox}>
-            <View style={styles.whyHeaderRow}>
-              <Lightbulb size={15} color="#D04A1E" />
-              <Text style={styles.whyTitle}>Kenapa direkomendasikan?</Text>
-            </View>
-            <View style={styles.whyItem}>
-              <CheckCircle2 size={13} color="#D04A1E" />
-              <Text style={styles.whyText}>Kamu sering mencatat tempat dengan suasana cozy.</Text>
-            </View>
-            <View style={styles.whyItem}>
-              <CheckCircle2 size={13} color="#D04A1E" />
-              <Text style={styles.whyText}>Kamu menyukai menu kopi dan pastry.</Text>
-            </View>
-            <View style={styles.whyItem}>
-              <CheckCircle2 size={13} color="#D04A1E" />
-              <Text style={styles.whyText}>Pengguna lain dengan preferensi serupa memberi rating tinggi.</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Tempat Serupa yang Mungkin Kamu Suka (Matching Screen 2) */}
-        <View style={styles.popularMenuSection}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Tempat Serupa yang Mungkin Kamu Suka</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>Lihat Semua &gt;</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.menuScroll}>
-            {similarPlaces.map((sp, idx) => (
-              <View key={idx} style={styles.similarPlaceCard}>
-                <Image source={{ uri: sp.image }} style={styles.similarPlaceImage} />
-                <Text style={styles.menuItemName} numberOfLines={1}>{sp.name}</Text>
-                <View style={styles.similarRatingRow}>
-                  <Star size={11} color="#F39A28" fill="#F39A28" />
-                  <Text style={styles.similarRatingScore}>{sp.rating} ({sp.count})</Text>
+          {place.openingHours ? (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.infoRow}>
+                <Clock size={18} color={theme.colors.coffeeBrown} style={styles.infoIcon} />
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoTitle}>{place.openingHours}</Text>
+                  <Text style={styles.infoSubtitle}>Jam buka menurut OpenStreetMap</Text>
                 </View>
-                <Text style={styles.similarAreaText}>{sp.area}</Text>
               </View>
-            ))}
-          </ScrollView>
+            </>
+          ) : null}
+
+          {place.phone ? (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.infoRow}>
+                <Phone size={18} color={theme.colors.coffeeBrown} style={styles.infoIcon} />
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoTitle}>{place.phone}</Text>
+                </View>
+                <TouchableOpacity onPress={() => openUrl(`tel:${place.phone!.replace(/[^0-9+]/g, '')}`)} style={styles.rowActionBtn}>
+                  <Phone size={16} color={theme.colors.coffeeBrown} />
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : null}
+
+          {place.website ? (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.infoRow}>
+                <Globe size={18} color={theme.colors.coffeeBrown} style={styles.infoIcon} />
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoLinkText} numberOfLines={1}>
+                    {place.website}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => openUrl(place.website!)} style={styles.rowActionBtn}>
+                  <ExternalLink size={16} color={theme.colors.coffeeBrown} />
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : null}
+        </View>
+
+        {place.cuisine ? (
+          <View style={styles.descSection}>
+            <Text style={styles.descText}>Masakan: {place.cuisine.replace(/_/g, ' ').replace(/;/g, ', ')}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.descSection}>
+          <Text style={styles.reviewCount}>
+            {place.providerId === 'osm' ? 'Data tempat © kontributor OpenStreetMap (ODbL).' : 'Tempat yang dimasukkan secara manual.'}
+          </Text>
         </View>
       </ScrollView>
 
-      {/* 8. Sticky Bottom Action Button */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={styles.writeJournalBtn}
-          onPress={() => onWriteJournal(place)}
-          activeOpacity={0.85}
-        >
+        <TouchableOpacity style={styles.writeJournalBtn} onPress={() => onWriteJournal(place)} activeOpacity={0.85}>
           <Edit3 size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
           <Text style={styles.writeJournalText}>Write Journal</Text>
         </TouchableOpacity>

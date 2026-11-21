@@ -1,44 +1,69 @@
-import { useState, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
-import {
-  MOCK_WISHLIST_PLACES,
-  MOCK_WISHLIST_MENUS,
-  WishlistCardItem,
-  WishlistMenuItem,
-} from '../../../mocks/data/mockWishlist';
+import { WishlistItem } from '../../../models/wishlist';
+import { UserLocation } from '../../../models/place';
+import { wishlistRepository } from '../../../repositories';
+import { calculateDistance } from '../../../utils/geo';
 
 export type WishlistTab = 'tempat' | 'menu';
+export type WishlistSort = 'newest' | 'name_asc' | 'name_desc' | 'nearest';
 
-export function useWishlist(userId: string) {
+const SORT_CYCLE: WishlistSort[] = ['newest', 'nearest', 'name_asc', 'name_desc'];
+
+/** Real wishlist from the repository (no mock rows, no invented ratings). */
+export function useWishlist(userId: string, userLocation?: UserLocation) {
   const [activeTab, setActiveTab] = useState<WishlistTab>('tempat');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [placesList, setPlacesList] = useState<WishlistCardItem[]>(MOCK_WISHLIST_PLACES);
-  const [menuList, setMenuList] = useState<WishlistMenuItem[]>(MOCK_WISHLIST_MENUS);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [minimumRating, setMinimumRating] = useState<number | null>(null);
-  const [sortAscending, setSortAscending] = useState(false);
+  const [placesList, setPlacesList] = useState<WishlistItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sort, setSort] = useState<WishlistSort>('newest');
 
-  const handleToggleHeart = (item: WishlistCardItem) => {
-    Alert.alert('Wishlist', `Hapus "${item.name}" dari Wishlist?`, [
+  const fetchList = useCallback(
+    () =>
+      wishlistRepository.getWishlist(userId).then(
+        (items) => ({ items, error: null as string | null }),
+        (err) => ({ items: null, error: err instanceof Error ? err.message : String(err) })
+      ),
+    [userId]
+  );
+
+  const apply = useCallback((r: { items: WishlistItem[] | null; error: string | null }) => {
+    if (r.items) setPlacesList(r.items);
+    setError(r.error);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetchList().then((r) => active && apply(r));
+    return () => {
+      active = false;
+    };
+  }, [fetchList, apply]);
+
+  const load = useCallback(() => fetchList().then(apply), [fetchList, apply]);
+
+  const distanceOf = useCallback(
+    (item: WishlistItem) =>
+      userLocation ? calculateDistance(userLocation.latitude, userLocation.longitude, item.latitude, item.longitude) : undefined,
+    [userLocation]
+  );
+
+  const handleToggleHeart = (item: WishlistItem) => {
+    Alert.alert('Wishlist', `Hapus "${item.placeName}" dari Wishlist?`, [
       { text: 'Batal', style: 'cancel' },
       {
         text: 'Hapus',
         style: 'destructive',
-        onPress: () => {
-          setPlacesList((prev) => prev.filter((p) => p.id !== item.id));
-        },
-      },
-    ]);
-  };
-
-  const handleRemoveMenu = (item: WishlistMenuItem) => {
-    Alert.alert('Wishlist', `Hapus "${item.name}" dari Wishlist?`, [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Hapus',
-        style: 'destructive',
-        onPress: () => {
-          setMenuList((prev) => prev.filter((m) => m.id !== item.id));
+        onPress: async () => {
+          try {
+            const { sync } = await wishlistRepository.removeFromWishlist(userId, item.placeId);
+            setPlacesList((prev) => prev.filter((p) => p.placeId !== item.placeId));
+            if (sync === 'pending') Alert.alert('Wishlist', 'Dihapus di perangkat; akan disinkronkan saat online.');
+          } catch (err) {
+            Alert.alert('Gagal Menghapus', err instanceof Error ? err.message : String(err));
+          }
         },
       },
     ]);
@@ -48,21 +73,18 @@ export function useWishlist(userId: string) {
     const q = searchQuery.trim().toLowerCase();
     const result = placesList.filter(
       (item) =>
-        (!q || item.name.toLowerCase().includes(q) || item.address.toLowerCase().includes(q) || item.description.toLowerCase().includes(q)) &&
-        minimumRating === null
+        !q ||
+        item.placeName.toLowerCase().includes(q) ||
+        item.placeAddress.toLowerCase().includes(q) ||
+        (item.personalNotes ?? '').toLowerCase().includes(q)
     );
-    return result.sort((a, b) => sortAscending ? a.name.localeCompare(b.name) : a.name.localeCompare(b.name));
-  }, [placesList, searchQuery, minimumRating, sortAscending]);
-
-  const filteredMenus = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    const result = menuList.filter(
-      (item) =>
-        (!q || item.name.toLowerCase().includes(q) || item.placeName.toLowerCase().includes(q) || item.notes.toLowerCase().includes(q)) &&
-        (minimumRating === null || Number(item.price.replace(/[^0-9]/g, '')) >= 50000)
-    );
-    return result.sort((a, b) => sortAscending ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
-  }, [menuList, searchQuery, minimumRating, sortAscending]);
+    const sorted = [...result];
+    if (sort === 'name_asc') sorted.sort((a, b) => a.placeName.localeCompare(b.placeName));
+    else if (sort === 'name_desc') sorted.sort((a, b) => b.placeName.localeCompare(a.placeName));
+    else if (sort === 'nearest' && userLocation) sorted.sort((a, b) => (distanceOf(a) ?? 0) - (distanceOf(b) ?? 0));
+    else sorted.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return sorted;
+  }, [placesList, searchQuery, sort, userLocation, distanceOf]);
 
   return {
     activeTab,
@@ -70,15 +92,16 @@ export function useWishlist(userId: string) {
     searchQuery,
     setSearchQuery,
     placesList,
-    menuList,
     filteredPlaces,
-    filteredMenus,
     loading,
-    minimumRating,
-    setMinimumRating,
-    sortAscending,
-    setSortAscending,
+    error,
+    reload: () => {
+      setLoading(true);
+      return load();
+    },
+    sort,
+    cycleSort: () => setSort((s) => SORT_CYCLE[(SORT_CYCLE.indexOf(s) + 1) % SORT_CYCLE.length]),
+    distanceOf,
     handleToggleHeart,
-    handleRemoveMenu,
   };
 }

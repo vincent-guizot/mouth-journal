@@ -1,76 +1,56 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import React from 'react';
+import { View, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AddLogScreen } from '../../../src/screens/AddLogScreen';
 import { useAuth } from '../../../src/context/AuthContext';
 import { journalRepository } from '../../../src/repositories';
-import { Journal } from '../../../src/models/journal';
+import { useJournalRecord } from '../../../src/features/diary/hooks/useJournalRecord';
+import { NotFoundState } from '../../../src/components/feedback/NotFoundState';
+import { parseIdParam, parseJournalInitialData } from '../../../src/navigation/routeParams';
 import { theme } from '../../../src/config/theme';
 
 export default function JournalEditRoute() {
   const router = useRouter();
-  const { journalId, initialData } = useLocalSearchParams<{
-    journalId: string;
-    initialData?: string;
-  }>();
-  const { currentUser } = useAuth();
-  const [journal, setJournal] = useState<Journal | null>(() => {
-    if (initialData) {
-      try {
-        return JSON.parse(initialData);
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
-  const [isLoading, setIsLoading] = useState(!journal);
+  const params = useLocalSearchParams<{ journalId: string; initialData?: string }>();
+  const { currentUser, appMode } = useAuth();
+  const journalId = parseIdParam(params.journalId);
+  const { journal, status, error, reload } = useJournalRecord(
+    currentUser?.uid,
+    journalId,
+    parseJournalInitialData(journalId, currentUser?.uid, params.initialData, appMode === 'demo')
+  );
 
-  useEffect(() => {
-    if (!journal && currentUser?.uid && journalId) {
-      setIsLoading(true);
-      journalRepository
-        .getJournalById(currentUser.uid, journalId)
-        .then((fetched) => {
-          if (fetched) {
-            setJournal(fetched);
-          }
-        })
-        .finally(() => setIsLoading(false));
-    }
-  }, [journalId, currentUser?.uid]);
-
-  if (isLoading) {
+  if (status === 'loading' || !currentUser) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.terracotta} />
       </View>
     );
   }
-
-  if (!journal) {
+  if (status !== 'ready' || !journal) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.notFoundText}>Jurnal tidak ditemukan atau sudah dihapus.</Text>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>Kembali</Text>
-        </TouchableOpacity>
-      </View>
+      <NotFoundState
+        title={status === 'error' ? 'Jurnal gagal dimuat' : 'Jurnal tidak ditemukan atau sudah dihapus.'}
+        message={status === 'error' ? error ?? undefined : undefined}
+        onBack={() => router.back()}
+        onRetry={status === 'error' ? reload : undefined}
+      />
     );
   }
 
   return (
     <View style={styles.container}>
       <AddLogScreen
+        // Remount when the authoritative copy replaces the initialData copy.
+        key={`${journal.id}-${journal.updatedAt ?? journal.createdAt}`}
         initialJournal={journal}
-        userId={currentUser?.uid || ''}
-        userName={currentUser?.displayName || 'Me'}
+        userId={currentUser.uid}
+        userName={currentUser.displayName}
         onClose={() => router.back()}
         onSuccess={() => router.replace('/(tabs)/diary')}
         onDelete={async () => {
-          if (currentUser?.uid && journal?.id) {
-            await journalRepository.deleteJournal(currentUser.uid, journal.id);
-          }
+          const { sync } = await journalRepository.deleteJournal(currentUser.uid, journal.id);
+          if (sync === 'pending') Alert.alert('Jurnal Dihapus', 'Dihapus di perangkat; akan disinkronkan saat online.');
           router.replace('/(tabs)/diary');
         }}
       />
@@ -79,17 +59,6 @@ export default function JournalEditRoute() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  notFoundText: { color: theme.colors.textSecondary, marginBottom: 14 },
-  backButton: { backgroundColor: theme.colors.terracotta, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10 },
-  backButtonText: { color: '#FFFFFF', fontWeight: '700' },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  loadingContainer: { flex: 1, backgroundColor: theme.colors.background, justifyContent: 'center', alignItems: 'center' },
 });

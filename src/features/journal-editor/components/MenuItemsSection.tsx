@@ -51,7 +51,7 @@ export const MenuItemsSection: React.FC<MenuItemsSectionProps> = ({
 
       {menuItems.map((item) => (
         <View key={item.id} style={styles.menuItemCard}>
-          <Image source={{ uri: item.image }} style={styles.menuThumbnail} />
+          {item.image ? <Image source={{ uri: item.image }} style={styles.menuThumbnail} /> : <View style={[styles.menuThumbnail, { backgroundColor: '#FAF5EE' }]} />}
           <View style={styles.menuInfoCol}>
             <View style={styles.menuTitleRow}>
               <Text style={styles.menuNameText}>{item.name}</Text>
@@ -72,12 +72,12 @@ export const MenuItemsSection: React.FC<MenuItemsSectionProps> = ({
                   <Star
                     key={s}
                     size={11}
-                    color={s <= item.rating ? '#F39A28' : '#E8E1D5'}
-                    fill={s <= item.rating ? '#F39A28' : 'transparent'}
+                    color={item.rating !== undefined && s <= item.rating ? '#F39A28' : '#E8E1D5'}
+                    fill={item.rating !== undefined && s <= item.rating ? '#F39A28' : 'transparent'}
                     style={{ marginLeft: 1 }}
                   />
                 ))}
-                <Text style={styles.menuScoreText}>{item.rating}</Text>
+                <Text style={styles.menuScoreText}>{item.rating ?? 'Belum dinilai'}</Text>
               </View>
             </View>
           </View>

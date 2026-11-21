@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Animated,
   View,
   Text,
   StyleSheet,
@@ -12,7 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import Svg, { Path, Circle, Rect, G } from 'react-native-svg';
-import { AuthService, UserProfile, DEMO_USER } from '../services/firebase/authService';
+import { useAuth } from '../context/AuthContext';
 import { theme } from '../config/theme';
 import { DecorativeAssets, IllustrationAssets } from '../config/assets';
 import {
@@ -23,8 +25,6 @@ import {
   EyeOff,
   ArrowLeft,
   Check,
-  RotateCcw,
-  Sparkles,
 } from 'lucide-react-native';
 
 export type AuthFlowStep =
@@ -32,14 +32,11 @@ export type AuthFlowStep =
   | 'register'
   | 'forgot_password'
   | 'link_sent'
-  | 'new_password'
-  | 'reset_success'
-  | 'register_success'
-  | 'google_signin'
-  | 'apple_signin';
+  | 'register_success';
 
 interface AuthModalProps {
-  onSuccess: (user: UserProfile) => void;
+  /** Called after Firebase (or explicit demo mode) confirmed the session. */
+  onSuccess: () => void;
   initialStep?: AuthFlowStep;
 }
 
@@ -114,40 +111,63 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 }) => {
   const [step, setStep] = useState<AuthFlowStep>(initialStep);
 
-  // Form states
-  const [name, setName] = useState('Vincentia');
-  const [email, setEmail] = useState('user@email.com');
-  const [password, setPassword] = useState('password123');
-  const [confirmPassword, setConfirmPassword] = useState('password123');
-  const [rememberMe, setRememberMe] = useState(true);
-  const [agreeTerms, setAgreeTerms] = useState(true);
+  const { login, register, sendPasswordReset, appMode } = useAuth();
+
+  // Form states — always start empty; no prefilled demo credentials.
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [agreeTerms, setAgreeTerms] = useState(false);
 
   // Password visibility toggles
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Loading indicator
   const [loading, setLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [pageOpacity] = useState(() => new Animated.Value(0));
+  const [pageTranslateY] = useState(() => new Animated.Value(16));
 
-  // Actions
-  const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Perhatian', 'Harap isi email dan password.');
-      return;
-    }
+  useEffect(() => {
+    pageOpacity.setValue(0);
+    pageTranslateY.setValue(16);
+    Animated.parallel([
+      Animated.timing(pageOpacity, { toValue: 1, duration: 220, useNativeDriver: true }),
+      Animated.spring(pageTranslateY, { toValue: 0, damping: 18, stiffness: 190, useNativeDriver: true }),
+    ]).start();
+  }, [pageOpacity, pageTranslateY, step]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  const run = async (title: string, fn: () => Promise<void>) => {
     setLoading(true);
     try {
-      const user = await AuthService.login(email.trim(), password);
-      onSuccess(user);
-    } catch {
-      onSuccess(DEMO_USER);
+      await fn();
+    } catch (err) {
+      Alert.alert(title, err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRegister = async () => {
-    if (!name.trim() || !email.trim() || !password.trim()) {
+  const handleLogin = () => {
+    if (!email.trim() || !password) {
+      Alert.alert('Perhatian', 'Harap isi email dan password.');
+      return;
+    }
+    return run('Login Gagal', async () => {
+      await login(email.trim(), password);
+      onSuccess();
+    });
+  };
+
+  const handleRegister = () => {
+    if (!name.trim() || !email.trim() || !password) {
       Alert.alert('Perhatian', 'Harap lengkapi semua kolom pendaftaran.');
       return;
     }
@@ -159,39 +179,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       Alert.alert('Perhatian', 'Harap setujui syarat penggunaan.');
       return;
     }
-    setStep('register_success');
+    return run('Pendaftaran Gagal', async () => {
+      await register(email.trim(), password, name.trim());
+      setStep('register_success');
+    });
   };
+
+  const requestReset = (onSent: () => void) =>
+    run('Gagal Mengirim Email', async () => {
+      await sendPasswordReset(email.trim());
+      setResendCooldown(60);
+      onSent();
+    });
 
   const handleForgotPasswordSubmit = () => {
     if (!email.trim()) {
       Alert.alert('Perhatian', 'Harap masukkan alamat email.');
       return;
     }
-    setStep('link_sent');
+    return requestReset(() => setStep('link_sent'));
   };
 
-  const handleResetPasswordSubmit = () => {
-    if (!password.trim() || !confirmPassword.trim()) {
-      Alert.alert('Perhatian', 'Harap masukkan password baru.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert('Perhatian', 'Konfirmasi password baru tidak cocok.');
-      return;
-    }
-    setStep('reset_success');
-  };
-
-  const handleSocialSelectUser = (provider: 'google' | 'apple') => {
-    const user: UserProfile = {
-      uid: provider === 'google' ? 'google-vincent-1' : 'apple-vincent-1',
-      displayName: 'Vincent Guizot',
-      email: provider === 'google' ? 'vincent@gmail.com' : 'vincent@icloud.com',
-      photoURL:
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-    };
-    onSuccess(user);
-  };
+  const handleResend = () =>
+    requestReset(() => Alert.alert('Email Terkirim', `Link reset baru dikirim ke ${email.trim()}.`));
 
   return (
     <KeyboardAvoidingView
@@ -201,7 +211,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
       >
+        <Animated.View style={{ opacity: pageOpacity, transform: [{ translateY: pageTranslateY }] }}>
         {/* ================= 1. LOGIN SCREEN ================= */}
         {step === 'login' && (
           <View style={styles.pageWrapper}>
@@ -213,6 +225,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 Lanjutkan perjalanan kuliner bersama MouthJournal.
               </Text>
             </View>
+
+            {appMode !== 'firebase' && (
+              <View style={styles.modeBanner}>
+                <Text style={styles.modeBannerText}>
+                  {appMode === 'demo'
+                    ? 'Mode demo lokal: data hanya tersimpan di perangkat ini, password tidak diverifikasi, dan tidak ada sinkronisasi cloud.'
+                    : 'Firebase belum dikonfigurasi. Login tidak dapat dilakukan sampai variabel EXPO_PUBLIC_FIREBASE_* diisi.'}
+                </Text>
+              </View>
+            )}
 
             {/* Input Email */}
             <View style={styles.inputContainer}>
@@ -253,21 +275,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             {/* Helper Row: Remember me & Forgot Password */}
             <View style={styles.helperRow}>
-              <TouchableOpacity
-                style={styles.checkboxRow}
-                onPress={() => setRememberMe(!rememberMe)}
-                activeOpacity={0.8}
-              >
-                <View
-                  style={[
-                    styles.checkboxBox,
-                    rememberMe && styles.checkboxBoxActive,
-                  ]}
-                >
-                  {rememberMe && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
-                </View>
-                <Text style={styles.checkboxLabel}>Ingat saya</Text>
-              </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => setStep('forgot_password')}
@@ -279,11 +286,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             {/* Primary Button */}
             <TouchableOpacity
-              style={styles.primaryBtn}
+              style={[styles.primaryBtn, loading && styles.primaryBtnDisabled]}
               onPress={handleLogin}
               activeOpacity={0.88}
+              disabled={loading}
             >
-              <Text style={styles.primaryBtnText}>Masuk</Text>
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.primaryBtnText}>Masuk</Text>
+              )}
             </TouchableOpacity>
 
             {/* Social Divider */}
@@ -293,36 +305,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Google & Apple Buttons */}
+            {/* Google & Apple: not configured in this project (no OAuth client IDs /
+                Apple capability). Shown disabled instead of faking a sign-in. */}
             <View style={styles.socialButtonsGroup}>
-              <TouchableOpacity
-                style={styles.socialBtn}
-                onPress={() => setStep('google_signin')}
-                activeOpacity={0.85}
-              >
+              <View style={[styles.socialBtn, styles.socialBtnDisabled]} accessibilityState={{ disabled: true }}>
                 <GoogleLogo size={20} />
-                <Text style={styles.socialBtnText}>Lanjut dengan Google</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.socialBtn}
-                onPress={() => setStep('apple_signin')}
-                activeOpacity={0.85}
-              >
+                <Text style={styles.socialBtnText}>Lanjut dengan Google (belum tersedia)</Text>
+              </View>
+              <View style={[styles.socialBtn, styles.socialBtnDisabled]} accessibilityState={{ disabled: true }}>
                 <AppleLogo size={20} />
-                <Text style={styles.socialBtnText}>Lanjut dengan Apple</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.socialBtn, { backgroundColor: '#FAF5EE', borderColor: '#D06B3F' }]}
-                onPress={() => onSuccess(DEMO_USER)}
-                activeOpacity={0.85}
-              >
-                <Sparkles size={18} color="#D06B3F" />
-                <Text style={[styles.socialBtnText, { color: '#D06B3F', fontWeight: '700' }]}>
-                  Masuk Cepat (Akun Demo)
-                </Text>
-              </TouchableOpacity>
+                <Text style={styles.socialBtnText}>Lanjut dengan Apple (belum tersedia)</Text>
+              </View>
             </View>
 
             {/* Bottom Register Switch */}
@@ -446,11 +439,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             {/* Primary Button */}
             <TouchableOpacity
-              style={styles.primaryBtn}
+              style={[styles.primaryBtn, loading && styles.primaryBtnDisabled]}
               onPress={handleRegister}
+              disabled={loading}
               activeOpacity={0.88}
             >
-              <Text style={styles.primaryBtnText}>Daftar</Text>
+              {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryBtnText}>Daftar</Text>}
             </TouchableOpacity>
 
             {/* Social Divider */}
@@ -460,25 +454,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Google & Apple Buttons */}
+            {/* Google & Apple: not configured in this project (no OAuth client IDs /
+                Apple capability). Shown disabled instead of faking a sign-in. */}
             <View style={styles.socialButtonsGroup}>
-              <TouchableOpacity
-                style={styles.socialBtn}
-                onPress={() => setStep('google_signin')}
-                activeOpacity={0.85}
-              >
+              <View style={[styles.socialBtn, styles.socialBtnDisabled]} accessibilityState={{ disabled: true }}>
                 <GoogleLogo size={20} />
-                <Text style={styles.socialBtnText}>Daftar dengan Google</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.socialBtn}
-                onPress={() => setStep('apple_signin')}
-                activeOpacity={0.85}
-              >
+                <Text style={styles.socialBtnText}>Daftar dengan Google (belum tersedia)</Text>
+              </View>
+              <View style={[styles.socialBtn, styles.socialBtnDisabled]} accessibilityState={{ disabled: true }}>
                 <AppleLogo size={20} />
-                <Text style={styles.socialBtnText}>Daftar dengan Apple</Text>
-              </TouchableOpacity>
+                <Text style={styles.socialBtnText}>Daftar dengan Apple (belum tersedia)</Text>
+              </View>
             </View>
 
             {/* Bottom Login Switch */}
@@ -526,11 +512,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             {/* Primary Button */}
             <TouchableOpacity
-              style={styles.primaryBtn}
+              style={[styles.primaryBtn, loading && styles.primaryBtnDisabled]}
               onPress={handleForgotPasswordSubmit}
+              disabled={loading}
               activeOpacity={0.88}
             >
-              <Text style={styles.primaryBtnText}>Kirim Link Reset</Text>
+              {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryBtnText}>Kirim Link Reset</Text>}
             </TouchableOpacity>
 
             {/* Envelope Illustration from Assets */}
@@ -569,7 +556,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 Link Telah Dikirim
               </Text>
               <Text style={[styles.pageSubtitle, { textAlign: 'center' }]}>
-                Kami telah mengirimkan link reset password ke email kamu.
+                Firebase telah menerima permintaan reset. Buka link di email untuk membuat password baru, lalu masuk kembali di sini.
               </Text>
             </View>
 
@@ -578,17 +565,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <View style={styles.emailCardLeft}>
                 <Mail size={18} color="#D04A1E" />
                 <View style={{ marginLeft: 10 }}>
-                  <Text style={styles.emailCardText}>{email || 'user@email.com'}</Text>
+                  <Text style={styles.emailCardText}>{email}</Text>
                 </View>
               </View>
 
-              <TouchableOpacity
-                style={styles.bukaEmailPill}
-                onPress={() => setStep('new_password')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.bukaEmailPillText}>Buka Email</Text>
-              </TouchableOpacity>
             </View>
 
             {/* Helper text */}
@@ -599,12 +579,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {/* Resend button */}
             <TouchableOpacity
               style={styles.resendBtn}
-              onPress={() =>
-                Alert.alert('Email Terkirim', 'Link reset baru telah dikirimkan ke email kamu.')
-              }
+              onPress={handleResend}
+              disabled={loading || resendCooldown > 0}
               activeOpacity={0.8}
             >
-              <Text style={styles.resendBtnText}>Kirim Ulang Email</Text>
+              <Text style={styles.resendBtnText}>
+                {resendCooldown > 0 ? `Kirim ulang dalam ${resendCooldown} dtk` : 'Kirim Ulang Email'}
+              </Text>
             </TouchableOpacity>
 
             {/* Return to login */}
@@ -614,129 +595,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             >
               <ArrowLeft size={16} color="#4E2E21" />
               <Text style={styles.returnLoginText}>Kembali ke Login</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* ================= 5. NEW PASSWORD SCREEN ================= */}
-        {step === 'new_password' && (
-          <View style={styles.pageWrapper}>
-            <TouchableOpacity
-              style={styles.topBackBtn}
-              onPress={() => setStep('link_sent')}
-            >
-              <ArrowLeft size={22} color="#4E2E21" />
-            </TouchableOpacity>
-
-            <View style={styles.headingBox}>
-              <Text style={styles.pageTitle}>Buat Password Baru</Text>
-              <Text style={styles.pageSubtitle}>
-                Masukkan password baru untuk akun kamu.
-              </Text>
-            </View>
-
-            {/* Input Password Baru */}
-            <View style={styles.inputContainer}>
-              <Lock size={18} color="#7A675B" style={{ marginRight: 10 }} />
-              <TextInput
-                style={styles.textInput}
-                placeholder="Password Baru"
-                placeholderTextColor="#A89A90"
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={setPassword}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                {showPassword ? (
-                  <EyeOff size={18} color="#8C7A70" />
-                ) : (
-                  <Eye size={18} color="#8C7A70" />
-                )}
-              </TouchableOpacity>
-            </View>
-
-            {/* Input Konfirmasi Password Baru */}
-            <View style={styles.inputContainer}>
-              <Lock size={18} color="#7A675B" style={{ marginRight: 10 }} />
-              <TextInput
-                style={styles.textInput}
-                placeholder="Konfirmasi Password Baru"
-                placeholderTextColor="#A89A90"
-                secureTextEntry={!showConfirmPassword}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                {showConfirmPassword ? (
-                  <EyeOff size={18} color="#8C7A70" />
-                ) : (
-                  <Eye size={18} color="#8C7A70" />
-                )}
-              </TouchableOpacity>
-            </View>
-
-            {/* Password Criteria Card */}
-            <View style={styles.criteriaCard}>
-              <Text style={styles.criteriaTitle}>Password harus minimal:</Text>
-              <View style={styles.criteriaItem}>
-                <Check size={13} color="#D04A1E" strokeWidth={2.5} />
-                <Text style={styles.criteriaText}>8 karakter</Text>
-              </View>
-              <View style={styles.criteriaItem}>
-                <Check size={13} color="#D04A1E" strokeWidth={2.5} />
-                <Text style={styles.criteriaText}>Mengandung huruf besar dan kecil</Text>
-              </View>
-              <View style={styles.criteriaItem}>
-                <Check size={13} color="#D04A1E" strokeWidth={2.5} />
-                <Text style={styles.criteriaText}>Mengandung angka</Text>
-              </View>
-              <View style={styles.criteriaItem}>
-                <Check size={13} color="#D04A1E" strokeWidth={2.5} />
-                <Text style={styles.criteriaText}>
-                  Mengandung simbol (contoh: ! @ # $)
-                </Text>
-              </View>
-            </View>
-
-            {/* Reset Button */}
-            <TouchableOpacity
-              style={styles.primaryBtn}
-              onPress={handleResetPasswordSubmit}
-              activeOpacity={0.88}
-            >
-              <Text style={styles.primaryBtnText}>Reset Password</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* ================= 6. RESET SUCCESS SCREEN ================= */}
-        {step === 'reset_success' && (
-          <View style={[styles.pageWrapper, { justifyContent: 'center' }]}>
-            {/* Confetti Popper Illustration from Assets */}
-            <View style={styles.successIconCircle}>
-              <Image
-                source={DecorativeAssets.celebrationPartyPopper}
-                style={{ width: 130, height: 130, resizeMode: 'contain', alignSelf: 'center' }}
-              />
-            </View>
-
-            <View style={[styles.headingBox, { alignItems: 'center' }]}>
-              <Text style={[styles.pageTitle, { textAlign: 'center' }]}>
-                Password Berhasil{'\n'}Direset
-              </Text>
-              <Text style={[styles.pageSubtitle, { textAlign: 'center', marginTop: 8 }]}>
-                Password kamu telah berhasil diubah.{'\n'}Silakan login dengan password baru.
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.primaryBtn}
-              onPress={() => setStep('login')}
-              activeOpacity={0.88}
-            >
-              <Text style={styles.primaryBtnText}>Kembali ke Login</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -786,16 +644,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <TouchableOpacity
               style={styles.primaryBtn}
-              onPress={() => {
-                const newUser: UserProfile = {
-                  uid: 'registered-user-1',
-                  displayName: name || 'Vincentia',
-                  email: email || 'user@email.com',
-                  photoURL:
-                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-                };
-                onSuccess(newUser);
-              }}
+              onPress={onSuccess}
               activeOpacity={0.88}
             >
               <Text style={styles.primaryBtnText}>Mulai Sekarang</Text>
@@ -803,113 +652,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </View>
         )}
 
-        {/* ================= 8. GOOGLE SIGN IN SCREEN ================= */}
-        {step === 'google_signin' && (
-          <View style={styles.pageWrapper}>
-            <TouchableOpacity
-              style={styles.topBackBtn}
-              onPress={() => setStep('login')}
-            >
-              <ArrowLeft size={22} color="#4E2E21" />
-            </TouchableOpacity>
-
-            <View style={styles.socialHeaderCenter}>
-              <GoogleLogo size={46} />
-              <Text style={[styles.pageTitle, { textAlign: 'center', marginTop: 14 }]}>
-                Masuk dengan Google
-              </Text>
-              <Text style={[styles.pageSubtitle, { textAlign: 'center', marginTop: 4 }]}>
-                Pilih akun Google yang ingin kamu gunakan untuk MouthJournal.
-              </Text>
-            </View>
-
-            {/* Account Card */}
-            <TouchableOpacity
-              style={styles.accountCard}
-              onPress={() => handleSocialSelectUser('google')}
-              activeOpacity={0.85}
-            >
-              <Image
-                source={{
-                  uri:
-                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-                }}
-                style={styles.accountAvatar}
-              />
-              <View style={styles.accountInfo}>
-                <Text style={styles.accountName}>Vincent Guizot</Text>
-                <Text style={styles.accountEmail}>vincent@gmail.com</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Add Account Option */}
-            <TouchableOpacity
-              style={styles.addAccountRow}
-              onPress={() => handleSocialSelectUser('google')}
-            >
-              <Text style={styles.addAccountPlus}>+ </Text>
-              <Text style={styles.addAccountText}>Gunakan akun lain</Text>
-            </TouchableOpacity>
-
-            {/* Disclaimer */}
-            <Text style={styles.socialDisclaimer}>
-              Dengan melanjutkan, kamu menyetujui{' '}
-              <Text style={styles.termsHighlight}>Syarat Penggunaan</Text> dan{' '}
-              <Text style={styles.termsHighlight}>Kebijakan Privasi</Text> MouthJournal.
-            </Text>
-          </View>
-        )}
-
-        {/* ================= 9. APPLE SIGN IN SCREEN ================= */}
-        {step === 'apple_signin' && (
-          <View style={styles.pageWrapper}>
-            <TouchableOpacity
-              style={styles.topBackBtn}
-              onPress={() => setStep('login')}
-            >
-              <ArrowLeft size={22} color="#4E2E21" />
-            </TouchableOpacity>
-
-            <View style={styles.socialHeaderCenter}>
-              <AppleLogo size={48} />
-              <Text style={[styles.pageTitle, { textAlign: 'center', marginTop: 14 }]}>
-                Masuk dengan Apple
-              </Text>
-              <Text style={[styles.pageSubtitle, { textAlign: 'center', marginTop: 4 }]}>
-                Gunakan akun Apple kamu untuk masuk ke MouthJournal.
-              </Text>
-            </View>
-
-            {/* Account Card */}
-            <View style={styles.accountCard}>
-              <Image
-                source={{
-                  uri:
-                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-                }}
-                style={styles.accountAvatar}
-              />
-              <View style={styles.accountInfo}>
-                <Text style={styles.accountName}>Vincent Guizot</Text>
-                <Text style={styles.accountEmail}>vincent@icloud.com</Text>
-              </View>
-            </View>
-
-            <Text style={styles.applePrivacyNote}>
-              Apple akan membagikan nama dan email kamu dengan MouthJournal sesuai pengaturan privasi perangkat kamu.
-            </Text>
-
-            {/* Black Apple Button */}
-            <TouchableOpacity
-              style={styles.appleBlackBtn}
-              onPress={() => handleSocialSelectUser('apple')}
-              activeOpacity={0.88}
-            >
-              <AppleLogo size={20} color="#FFFFFF" />
-              <Text style={styles.appleBlackBtnText}>Lanjutkan dengan Apple</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -918,15 +661,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFFCF6',
   },
   scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
     paddingHorizontal: 22,
-    paddingTop: 10,
-    paddingBottom: 40,
+    paddingTop: 20,
+    paddingBottom: 28,
   },
   pageWrapper: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#F0E7DD',
+    shadowColor: '#4E2E21',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   },
   topBackBtn: {
     width: 36,
@@ -1037,6 +792,9 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 4,
   },
+  primaryBtnDisabled: {
+    opacity: 0.7,
+  },
   primaryBtnText: {
     fontSize: 15,
     fontWeight: '700',
@@ -1056,6 +814,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#8C7A70',
     paddingHorizontal: 10,
+  },
+  socialBtnDisabled: {
+    opacity: 0.5,
+  },
+  modeBanner: {
+    backgroundColor: '#FFF4E5',
+    borderColor: '#F0C38E',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  modeBannerText: {
+    fontSize: 12,
+    color: '#7A4B12',
+    lineHeight: 17,
   },
   socialButtonsGroup: {
     gap: 10,

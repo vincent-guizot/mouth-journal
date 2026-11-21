@@ -1,15 +1,16 @@
 import React from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { NearbyPlace, UserLocation } from '../types/places';
-import { WishlistCardItem } from '../mocks/data/mockWishlist';
 import { useWishlist } from '../features/wishlist/hooks/useWishlist';
+import { wishlistItemToPlace } from '../features/wishlist/wishlistToPlace';
 import { WishlistHeader } from '../features/wishlist/components/WishlistHeader';
 import { WishlistTabs } from '../features/wishlist/components/WishlistTabs';
 import { WishlistSearchBar } from '../features/wishlist/components/WishlistSearchBar';
 import { WishlistPlaceCard } from '../features/wishlist/components/WishlistPlaceCard';
-import { WishlistMenuCard } from '../features/wishlist/components/WishlistMenuCard';
 import { EmptyState } from '../components/feedback/EmptyState';
-import { Heart } from 'lucide-react-native';
+import { ErrorState } from '../components/feedback/ErrorState';
+import { LoadingState } from '../components/feedback/LoadingState';
+import { Heart, UtensilsCrossed } from 'lucide-react-native';
 import { theme } from '../config/theme';
 
 export interface WishlistScreenProps {
@@ -31,95 +32,58 @@ export const WishlistScreen: React.FC<WishlistScreenProps> = ({
     searchQuery,
     setSearchQuery,
     placesList,
-    menuList,
     filteredPlaces,
-    filteredMenus,
+    loading,
+    error,
+    reload,
+    cycleSort,
+    distanceOf,
     handleToggleHeart,
-    handleRemoveMenu,
-    minimumRating,
-    setMinimumRating,
-    sortAscending,
-    setSortAscending,
-  } = useWishlist(userId);
-
-  const handleCardPress = (item: WishlistCardItem) => {
-    const place: NearbyPlace = {
-      id: item.id,
-      name: item.name,
-      address: item.address,
-      mainCategory: item.mainCategory,
-      mainCategoryLabel: item.categoryLabel,
-      subCategory: item.subCategory,
-      subCategoryLabel: item.categoryLabel,
-      latitude: item.latitude,
-      longitude: item.longitude,
-      photoUrl: item.image,
-      ratingAverage: item.rating,
-      cuisine: item.description,
-    };
-    onPlaceSelect(place);
-  };
+  } = useWishlist(userId, userLocation.source === 'gps' ? userLocation : undefined);
 
   return (
     <View style={styles.container}>
-      {/* 1. Header: Wishlist Title & "Lihat di Peta" Button */}
       <WishlistHeader onOpenMap={onOpenMap} />
 
-      {/* 2. Segmented Tabs: Tempat vs Menu */}
+      {/* Menu wishlist has no data model/backend yet, so its count is honestly 0. */}
       <WishlistTabs
         activeTab={activeTab}
         onTabChange={setActiveTab}
         placesCount={placesList.length}
-        menuCount={menuList.length}
+        menuCount={0}
       />
 
-      {/* 3. Search Bar + Filter + Sort */}
-      <WishlistSearchBar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onFilterPress={() => setMinimumRating(minimumRating === null ? 4.5 : null)}
-        onSortPress={() => setSortAscending(!sortAscending)}
-      />
+      <WishlistSearchBar searchQuery={searchQuery} onSearchChange={setSearchQuery} onSortPress={cycleSort} />
 
-      {/* 4. List Content */}
-      {activeTab === 'tempat' ? (
-        filteredPlaces.length === 0 ? (
-          <EmptyState
-            icon={<Heart size={34} color={theme.colors.terracotta} />}
-            title="Wishlist Masih Kosong"
-            subtitle="Simpan tempat yang ingin kamu coba nanti."
-          />
-        ) : (
-          <FlatList
-            data={filteredPlaces}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => (
-              <WishlistPlaceCard
-                item={item}
-                onPress={() => handleCardPress(item)}
-                onToggleHeart={() => handleToggleHeart(item)}
-              />
-            )}
-          />
-        )
-      ) : filteredMenus.length === 0 ? (
+      {activeTab === 'menu' ? (
+        <EmptyState
+          icon={<UtensilsCrossed size={34} color={theme.colors.terracotta} />}
+          title="Wishlist Menu Belum Tersedia"
+          subtitle="Saat ini hanya tempat yang dapat disimpan ke wishlist."
+        />
+      ) : loading && placesList.length === 0 ? (
+        <LoadingState message="Memuat wishlist..." />
+      ) : error ? (
+        <ErrorState message={error} onRetry={reload} />
+      ) : filteredPlaces.length === 0 ? (
         <EmptyState
           icon={<Heart size={34} color={theme.colors.terracotta} />}
-          title="Wishlist Menu Masih Kosong"
-          subtitle="Simpan menu yang ingin kamu coba nanti."
+          title={searchQuery ? 'Tidak Ada Hasil' : 'Wishlist Masih Kosong'}
+          subtitle={searchQuery ? 'Coba kata kunci lain.' : 'Simpan tempat dari Explore yang ingin kamu coba nanti.'}
         />
       ) : (
         <FlatList
-          data={filteredMenus}
-          keyExtractor={(item) => item.id}
+          data={filteredPlaces}
+          keyExtractor={(item) => item.placeId}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}
           renderItem={({ item }) => (
-            <WishlistMenuCard
+            <WishlistPlaceCard
               item={item}
-              onRemoveHeart={() => handleRemoveMenu(item)}
+              distanceMeter={distanceOf(item)}
+              onPress={() => onPlaceSelect(wishlistItemToPlace(item))}
+              onToggleHeart={() => handleToggleHeart(item)}
             />
           )}
         />

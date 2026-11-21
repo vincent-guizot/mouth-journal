@@ -58,52 +58,29 @@ export const PhotoViewerScreen: React.FC<PhotoViewerProps> = ({
   onDeleteJournal,
   onPlaceSelect,
 }) => {
-  // Master fallback photos matching the 4 design screens
-  const defaultPhotos = [
-    'https://images.unsplash.com/photo-1544025162-d76694265947?w=1200&auto=format&fit=crop&q=80', // Steak & coffee (Screen 1)
-    'https://images.unsplash.com/photo-1528207776546-365bb710ee93?w=1200&auto=format&fit=crop&q=80', // Strawberry pancake (Screen 2)
-    'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=1200&auto=format&fit=crop&q=80', // Latte art (Screen 3)
-    'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=1200&auto=format&fit=crop&q=80', // Croissant
-    'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=1200&auto=format&fit=crop&q=80', // Cafe ambiance
-  ];
-
-  const photos =
-    propPhotos && propPhotos.length > 0
-      ? propPhotos
-      : journal?.photoUrls && journal.photoUrls.length > 0
-      ? journal.photoUrls
-      : defaultPhotos;
+  const photos: string[] =
+    propPhotos && propPhotos.length > 0 ? propPhotos : journal?.photoUrls ?? [];
 
   const [currentIndex, setCurrentIndex] = useState(
-    Math.min(Math.max(initialIndex, 0), photos.length - 1)
+    Math.min(Math.max(initialIndex, 0), Math.max(photos.length - 1, 0))
   );
 
   // UI States
   const [showDetailsSheet, setShowDetailsSheet] = useState(false); // Screen 3 state
   const [showActionSheet, setShowActionSheet] = useState(false); // Screen 4 state
-  const [isLiked, setIsLiked] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
   const [showControls, setShowControls] = useState(true);
 
-  // Journal Metadata
-  const venueName = journal?.placeName || 'Zona Nyaman Coffee';
-  const venueAddress = journal?.placeAddress || 'Kemanggisan, Jakarta Barat';
-  const dateStr = journal?.visitedAt
-    ? new Date(journal.visitedAt).toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      })
-    : '12 Okt 2026';
-  const timeStr = '10:30';
-  const companionStr = 'Teman';
-  const reviewContent =
-    journal?.reviewText ||
-    'Tempatnya nyaman, kopi nya enak, croissantnya juga flaky banget. Pasti akan balik lagi!';
-  const tags = journal?.tags && journal.tags.length > 0
-    ? journal.tags
-    : ['Nyaman', 'Kopi Enak', 'Suasana Cozy'];
-  const ratingScore = journal?.overallRating || 4.0;
+  // Journal metadata: only real values; sections hide when there is no journal.
+  const venueName = journal?.placeName ?? '';
+  const venueAddress = journal?.placeAddress ?? '';
+  const visited = journal ? new Date(journal.visitedAt) : null;
+  const dateStr = visited
+    ? visited.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '';
+  const timeStr = visited ? visited.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
+  const reviewContent = journal?.reviewText ?? '';
+  const tags = journal?.tags ?? [];
+  const ratingScore = journal?.overallRating ?? 0;
 
   // Navigation handlers
   const handleNext = () => {
@@ -124,47 +101,10 @@ export const PhotoViewerScreen: React.FC<PhotoViewerProps> = ({
 
   const handleShare = async () => {
     try {
-      await Share.share({
-        message: `Lihat momen kuliner di ${venueName} melalui MouthJournal: ${photos[currentIndex]}`,
-      });
-    } catch {
-      // Ignored
+      await Share.share({ message: `Momen kuliner di ${venueName}: ${photos[currentIndex]}` });
+    } catch (err) {
+      Alert.alert('Gagal membagikan', err instanceof Error ? err.message : String(err));
     }
-  };
-
-  const handleSaveToGallery = () => {
-    setShowActionSheet(false);
-    Alert.alert('Simpan Foto', 'Foto berhasil disimpan ke galeri perangkat kamu.');
-  };
-
-  const handleSetPrimary = () => {
-    setShowActionSheet(false);
-    Alert.alert('Foto Utama Diperbarui', 'Foto ini sekarang dijadikan sampul utama jurnal.');
-  };
-
-  const handleDeletePhoto = () => {
-    setShowActionSheet(false);
-    Alert.alert(
-      'Hapus Foto',
-      'Apakah kamu yakin ingin menghapus foto ini dari jurnal kuliner?',
-      [
-        { text: 'Batal', style: 'cancel' },
-        {
-          text: 'Hapus',
-          style: 'destructive',
-          onPress: () => {
-            if (photos.length > 1) {
-              if (currentIndex >= photos.length - 1) {
-                setCurrentIndex(photos.length - 2);
-              }
-              Alert.alert('Foto Dihapus', 'Foto berhasil dihapus.');
-            } else {
-              onClose();
-            }
-          },
-        },
-      ]
-    );
   };
 
   const handleDeleteJournal = () => {
@@ -179,15 +119,15 @@ export const PhotoViewerScreen: React.FC<PhotoViewerProps> = ({
           onPress: () => {
             if (journal && onDeleteJournal) {
               onDeleteJournal(journal.id);
+              onClose();
             }
-            onClose();
           },
         },
       ]
     );
   };
 
-  if (!visible) return null;
+  if (!visible || photos.length === 0) return null;
 
   return (
     <View style={styles.container}>
@@ -374,10 +314,6 @@ export const PhotoViewerScreen: React.FC<PhotoViewerProps> = ({
                 <Clock size={13} color="#D04A1E" />
                 <Text style={styles.metaText}>{timeStr}</Text>
               </View>
-              <View style={styles.metaItem}>
-                <Users size={13} color="#D04A1E" />
-                <Text style={styles.metaText}>{companionStr}</Text>
-              </View>
             </View>
 
             {/* Review / Story Caption */}
@@ -390,14 +326,6 @@ export const PhotoViewerScreen: React.FC<PhotoViewerProps> = ({
                   <Text style={styles.tagText}>{tag}</Text>
                 </View>
               ))}
-              <TouchableOpacity
-                style={styles.addTagBtn}
-                onPress={() =>
-                  Alert.alert('Tambah Tag', 'Fitur edit tag tersedia di Edit Journal.')
-                }
-              >
-                <Plus size={12} color="#E8DFD8" />
-              </TouchableOpacity>
             </View>
 
             {/* Overall Rating Row */}
@@ -417,48 +345,6 @@ export const PhotoViewerScreen: React.FC<PhotoViewerProps> = ({
 
             {/* Action Bar (Heart, Bookmark, Edit, Trash) */}
             <View style={styles.actionToolbar}>
-              {/* Suka */}
-              <TouchableOpacity
-                style={styles.actionCol}
-                onPress={() => setIsLiked(!isLiked)}
-                activeOpacity={0.75}
-              >
-                <View
-                  style={[
-                    styles.actionIconCircle,
-                    isLiked && styles.actionIconCircleActive,
-                  ]}
-                >
-                  <Heart
-                    size={18}
-                    color={isLiked ? '#D04A1E' : '#FFFFFF'}
-                    fill={isLiked ? '#D04A1E' : 'transparent'}
-                  />
-                </View>
-                <Text style={styles.actionLabel}>Suka</Text>
-              </TouchableOpacity>
-
-              {/* Simpan */}
-              <TouchableOpacity
-                style={styles.actionCol}
-                onPress={() => setIsSaved(!isSaved)}
-                activeOpacity={0.75}
-              >
-                <View
-                  style={[
-                    styles.actionIconCircle,
-                    isSaved && styles.actionIconCircleActive,
-                  ]}
-                >
-                  <Bookmark
-                    size={18}
-                    color={isSaved ? '#F39A28' : '#FFFFFF'}
-                    fill={isSaved ? '#F39A28' : 'transparent'}
-                  />
-                </View>
-                <Text style={styles.actionLabel}>Simpan</Text>
-              </TouchableOpacity>
-
               {/* Edit */}
               <TouchableOpacity
                 style={styles.actionCol}
@@ -467,8 +353,6 @@ export const PhotoViewerScreen: React.FC<PhotoViewerProps> = ({
                   if (journal && onEditJournal) {
                     onClose();
                     onEditJournal(journal);
-                  } else {
-                    Alert.alert('Edit Journal', 'Membuka editor jurnal...');
                   }
                 }}
                 activeOpacity={0.75}
@@ -479,7 +363,8 @@ export const PhotoViewerScreen: React.FC<PhotoViewerProps> = ({
                 <Text style={styles.actionLabel}>Edit</Text>
               </TouchableOpacity>
 
-              {/* Hapus */}
+              {/* Hapus (only when a real delete handler is wired) */}
+              {journal && onDeleteJournal && (
               <TouchableOpacity
                 style={styles.actionCol}
                 onPress={handleDeleteJournal}
@@ -490,6 +375,7 @@ export const PhotoViewerScreen: React.FC<PhotoViewerProps> = ({
                 </View>
                 <Text style={styles.actionLabel}>Hapus</Text>
               </TouchableOpacity>
+              )}
             </View>
           </ScrollView>
         </View>
@@ -547,51 +433,6 @@ export const PhotoViewerScreen: React.FC<PhotoViewerProps> = ({
                     <Text style={styles.optionLabel}>Bagikan ke...</Text>
                   </TouchableOpacity>
 
-                  {/* Simpan ke Galeri */}
-                  <TouchableOpacity
-                    style={styles.optionRow}
-                    onPress={handleSaveToGallery}
-                    activeOpacity={0.7}
-                  >
-                    <Download size={19} color="#4E2E21" />
-                    <Text style={styles.optionLabel}>Simpan ke Galeri</Text>
-                  </TouchableOpacity>
-
-                  {/* Jadikan Foto Utama */}
-                  <TouchableOpacity
-                    style={styles.optionRow}
-                    onPress={handleSetPrimary}
-                    activeOpacity={0.7}
-                  >
-                    <Star size={19} color="#4E2E21" />
-                    <Text style={styles.optionLabel}>Jadikan Foto Utama</Text>
-                  </TouchableOpacity>
-
-                  {/* Edit Foto */}
-                  <TouchableOpacity
-                    style={styles.optionRow}
-                    onPress={() => {
-                      setShowActionSheet(false);
-                      Alert.alert(
-                        'Edit Foto',
-                        'Membuka alat filter & rotasi foto kuliner...'
-                      );
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Pencil size={19} color="#4E2E21" />
-                    <Text style={styles.optionLabel}>Edit Foto</Text>
-                  </TouchableOpacity>
-
-                  {/* Hapus Foto */}
-                  <TouchableOpacity
-                    style={[styles.optionRow, styles.optionRowDestructive]}
-                    onPress={handleDeletePhoto}
-                    activeOpacity={0.7}
-                  >
-                    <Trash size={19} color="#DC2626" />
-                    <Text style={styles.optionLabelDestructive}>Hapus Foto</Text>
-                  </TouchableOpacity>
                 </View>
 
                 {/* Cancel Button */}

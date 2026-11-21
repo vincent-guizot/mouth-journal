@@ -7,5 +7,4 @@ export * from './Header';
 export * from './BottomNavBar';
 export * from './RatingStars';
 export * from './CriteriaSlider';
-export * from './AutoRecommendedCarousel';
 export * from './MouthJournalLogo';

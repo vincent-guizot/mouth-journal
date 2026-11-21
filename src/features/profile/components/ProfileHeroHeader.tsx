@@ -37,14 +37,11 @@ export const ProfileHeroHeader: React.FC<ProfileHeroHeaderProps> = ({
       {/* 2. User Bio Section */}
       <View style={styles.userSection}>
         <View style={styles.avatarWrapper}>
-          <Image
-            source={{
-              uri:
-                user.photoURL ||
-                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-            }}
-            style={styles.avatarImage}
-          />
+          {user.photoURL ? (
+            <Image source={{ uri: user.photoURL }} style={styles.avatarImage} />
+          ) : (
+            <View style={[styles.avatarImage, { backgroundColor: '#EFE6DC' }]} />
+          )}
           <TouchableOpacity
             style={styles.cameraBadge}
             onPress={onEditProfile}

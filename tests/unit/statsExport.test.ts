@@ -34,9 +34,26 @@ describe('DiaryService.calculateStats (no placeholder values)', () => {
 
 describe('Data export', () => {
   test('archive contains real records and totals', () => {
-    const a = buildExportArchive({ uid: 'u1', email: 'a@b.co', displayName: 'A' }, [j({ id: '1' }), j({ id: '2', totalSpent: 500 })], [], DEFAULT_APP_SETTINGS, new Date('2026-11-01T00:00:00.000Z'));
+    const mw = {
+      id: 'mw-1',
+      userId: 'u1',
+      placeId: 'osm-node-1',
+      placeName: 'Kopi Kenangan',
+      menuName: 'Kopi Kenangan Mantan',
+      createdAt: '2026-10-01T00:00:00.000Z',
+    };
+    const a = buildExportArchive(
+      { uid: 'u1', email: 'a@b.co', displayName: 'A' },
+      [j({ id: '1' }), j({ id: '2', totalSpent: 500 })],
+      [],
+      DEFAULT_APP_SETTINGS,
+      [mw],
+      new Date('2026-11-01T00:00:00.000Z')
+    );
     assert.equal(a.stats.totalJournals, 2);
     assert.equal(a.stats.totalSpent, 1500);
+    assert.equal(a.stats.totalMenuWishlistItems, 1);
+    assert.equal(a.menuWishlist.length, 1);
     assert.equal(a.exportedAt, '2026-11-01T00:00:00.000Z');
   });
   test('foreign records abort the export instead of being silently filtered', () => {

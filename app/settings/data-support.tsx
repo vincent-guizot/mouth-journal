@@ -14,6 +14,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import {
   journalRepository,
   wishlistRepository,
+  menuWishlistRepository,
   userPreferencesRepository,
   userProfileRepository,
 } from '../../src/repositories';
@@ -35,8 +36,12 @@ export default function DataSupportSettingsRoute() {
     }
     let pending = 0;
     try {
-      const [j, w] = await Promise.all([journalRepository.getSyncState(uid), wishlistRepository.getSyncState(uid)]);
-      pending = j.pending + j.failed.length + w.pending + w.failed.length;
+      const [j, w, m] = await Promise.all([
+        journalRepository.getSyncState(uid),
+        wishlistRepository.getSyncState(uid),
+        menuWishlistRepository.getSyncState(uid),
+      ]);
+      pending = j.pending + j.failed.length + w.pending + w.failed.length + m.pending + m.failed.length;
     } catch (err) {
       feedback.showAlert('Gagal', err instanceof Error ? err.message : String(err));
       return;
@@ -55,6 +60,7 @@ export default function DataSupportSettingsRoute() {
           await Promise.all([
             journalRepository.clearUserCache(uid),
             wishlistRepository.clearUserCache(uid),
+            menuWishlistRepository.clearUserCache(uid),
             userPreferencesRepository.clearUserCache(uid),
             userProfileRepository.clearUserCache(uid),
           ]);
@@ -72,12 +78,13 @@ export default function DataSupportSettingsRoute() {
   const handleExportData = async () => {
     if (!currentUser?.uid) return;
     try {
-      const [journals, wishlist, settings] = await Promise.all([
+      const [journals, wishlist, menuWishlist, settings] = await Promise.all([
         journalRepository.getJournals(currentUser.uid),
         wishlistRepository.getWishlist(currentUser.uid),
+        menuWishlistRepository.getMenuWishlist(currentUser.uid),
         userPreferencesRepository.getSettings(currentUser.uid),
       ]);
-      const archive = buildExportArchive(currentUser, journals, wishlist, settings);
+      const archive = buildExportArchive(currentUser, journals, wishlist, settings, menuWishlist);
       await Share.share({ title: 'MouthJournal export', message: JSON.stringify(archive, null, 2) });
     } catch (err) {
       feedback.showAlert('Gagal Ekspor', err instanceof Error ? err.message : String(err));

@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { DiaryEntry } from '../../../types/diary';
 import { UserProfile } from '../../../models/user';
 import { WishlistItem } from '../../../models/wishlist';
-import { journalRepository, wishlistRepository } from '../../../repositories';
+import { MenuWishlistItem } from '../../../models/menuWishlist';
+import { journalRepository, wishlistRepository, menuWishlistRepository } from '../../../repositories';
 import { DiaryService } from '../../../services/firebase/diaryService';
 import {
   aggregateVisitedPlaces,
@@ -15,6 +16,7 @@ export function useProfileScreen(user: UserProfile) {
   const [activeTab, setActiveTab] = useState<ProfileTab>('jurnal');
   const [userDiaries, setUserDiaries] = useState<DiaryEntry[]>([]);
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
+  const [menuWishlistItems, setMenuWishlistItems] = useState<MenuWishlistItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,11 +25,13 @@ export function useProfileScreen(user: UserProfile) {
       Promise.all([
         journalRepository.getJournals(user.uid),
         wishlistRepository.getWishlist(user.uid),
+        menuWishlistRepository.getMenuWishlist(user.uid),
       ])
-        .then(([loadedDiaries, loadedWishlist]) => {
+        .then(([loadedDiaries, loadedWishlist, loadedMenuWishlist]) => {
           if (!isMounted()) return;
           setUserDiaries(loadedDiaries);
           setWishlistItems(loadedWishlist);
+          setMenuWishlistItems(loadedMenuWishlist);
           setError(null);
         })
         .catch((err) => {
@@ -68,6 +72,7 @@ export function useProfileScreen(user: UserProfile) {
     visitedPlaces,
     dishes,
     wishlistItems,
+    menuWishlistItems,
     stats,
     loading,
     error,

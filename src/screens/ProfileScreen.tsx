@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, Text, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
 import { DiaryEntry } from '../types/diary';
-import { UserProfile } from '../services/firebase/authService';
+import { UserProfile } from '../models/user';
 import { theme } from '../config/theme';
 import { useProfileScreen } from '../features/profile/hooks/useProfileScreen';
 import { ProfileHeroHeader } from '../features/profile/components/ProfileHeroHeader';
@@ -11,9 +11,10 @@ import { ProfileJournalItem } from '../features/profile/components/ProfileJourna
 import { ProfilePlaceItem } from '../features/profile/components/ProfilePlaceItem';
 import { ProfileDishItem } from '../features/profile/components/ProfileDishItem';
 import { ProfileWishlistItem } from '../features/profile/components/ProfileWishlistItem';
+import { WishlistMenuCard } from '../features/wishlist/components/WishlistMenuCard';
 import { EmptyState } from '../components/feedback/EmptyState';
 import { DecorativeAssets } from '../config/assets';
-import { BookOpen, MapPin, Utensils, Heart } from 'lucide-react-native';
+import { BookOpen, MapPin, Utensils, Heart, Sparkles, ChevronRight } from 'lucide-react-native';
 
 export interface ProfileScreenProps {
   user: UserProfile;
@@ -29,6 +30,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onOpenSettings,
   onJournalSelect,
   onEditProfile,
+  onOpenAIRecommendations,
 }) => {
   const {
     activeTab,
@@ -37,11 +39,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     visitedPlaces,
     dishes,
     wishlistItems,
+    menuWishlistItems,
     stats,
     loading,
     error,
     reload,
   } = useProfileScreen(user);
+
+  const totalWishlistCount = wishlistItems.length + menuWishlistItems.length;
 
   return (
     <ScrollView
@@ -57,20 +62,38 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         onEditProfile={onEditProfile}
       />
 
-      {/* 2. Culinary Statistics Bar */}
+      {/* 2. AI Recommendations Banner */}
+      {onOpenAIRecommendations && (
+        <TouchableOpacity
+          style={styles.aiBanner}
+          onPress={onOpenAIRecommendations}
+          activeOpacity={0.88}
+        >
+          <View style={styles.aiBannerIcon}>
+            <Sparkles size={16} color="#FFFFFF" />
+          </View>
+          <View style={styles.aiBannerTextCol}>
+            <Text style={styles.aiBannerTitle}>Rekomendasi Kuliner AI</Text>
+            <Text style={styles.aiBannerSubtitle}>Lihat profil selera rasa & tempat cocok di sekitarmu</Text>
+          </View>
+          <ChevronRight size={18} color="#D04A1E" />
+        </TouchableOpacity>
+      )}
+
+      {/* 3. Culinary Statistics Bar */}
       <ProfileStatsBar stats={stats} />
 
-      {/* 3. Segmented Tabs */}
+      {/* 4. Segmented Tabs */}
       <ProfileTabs
         activeTab={activeTab}
         onTabChange={setActiveTab}
         journalsCount={userDiaries.length}
         placesCount={visitedPlaces.length}
         menuCount={dishes.length}
-        wishlistCount={wishlistItems.length}
+        wishlistCount={totalWishlistCount}
       />
 
-      {/* 4. Tab Content: Journals / Places / Menus / Wishlist */}
+      {/* 5. Tab Content: Journals / Places / Menus / Wishlist */}
       <View style={styles.tabContentContainer}>
         {loading && userDiaries.length === 0 ? (
           <View style={styles.loadingContainer}>
@@ -127,7 +150,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               illustration={DecorativeAssets.iconCroissant}
               icon={<Utensils size={32} color={theme.colors.terracotta} />}
               title="Belum Ada Menu Dicatat"
-              subtitle="Hidangan yang kamu ulas di dalam jurnal akan dirangkum di sini."
+              subtitle="Menu pesanan yang kamu masukkan di jurnal akan muncul di sini."
             />
           ) : (
             dishes.map((dish) => {
@@ -146,17 +169,22 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             })
           )
         ) : activeTab === 'wishlist' ? (
-          wishlistItems.length === 0 ? (
+          totalWishlistCount === 0 ? (
             <EmptyState
               illustration={DecorativeAssets.flourishHeartRadiant}
               icon={<Heart size={32} color={theme.colors.terracotta} />}
               title="Wishlist Masih Kosong"
-              subtitle="Simpan tempat dari Explore yang ingin kamu kunjungi nanti."
+              subtitle="Simpan tempat dari Explore atau menu yang ingin kamu cicipi nanti."
             />
           ) : (
-            wishlistItems.map((item) => (
-              <ProfileWishlistItem key={item.id} item={item} />
-            ))
+            <>
+              {wishlistItems.map((item) => (
+                <ProfileWishlistItem key={item.id} item={item} />
+              ))}
+              {menuWishlistItems.map((menuItem) => (
+                <WishlistMenuCard key={menuItem.id} item={menuItem} />
+              ))}
+            </>
           )
         ) : null}
       </View>
@@ -171,6 +199,39 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 50,
+  },
+  aiBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FAF5EE',
+    marginHorizontal: 20,
+    marginBottom: 8,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#EFE3D3',
+    gap: 10,
+  },
+  aiBannerIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#D04A1E',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiBannerTextCol: {
+    flex: 1,
+  },
+  aiBannerTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#3D2C1E',
+  },
+  aiBannerSubtitle: {
+    fontSize: 11,
+    color: '#8A7A6D',
+    marginTop: 1,
   },
   tabContentContainer: {
     paddingHorizontal: 20,

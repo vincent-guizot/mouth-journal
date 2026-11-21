@@ -1,26 +1,26 @@
 {
   "name": "mouth-journal",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/caveat": "^0.4.2",
     "@expo-google-fonts/manrope": "^0.4.2",
     "@expo-google-fonts/playfair-display": "^0.4.2",
     "@react-native-async-storage/async-storage": "2.2.0",
-    "@react-native-community/datetimepicker": "8.4.4",
-    "expo": "^54.0.38",
+    "@react-native-community/datetimepicker": "9.2.1",
+    "expo": "~58.0.21",
     "expo-constants": "~58.0.13",
     "expo-font": "~58.0.10",
     "expo-image-picker": "~58.0.10",
-    "expo-linking": "~58.0.14",
-    "expo-location": "~58.0.19",
-    "expo-router": "~58.0.26",
+    "expo-linking": "~58.0.15",
+    "expo-location": "~58.0.20",
+    "expo-router": "~58.0.28",
     "expo-status-bar": "~58.0.4",
     "firebase": "^9.14.0",
     "lucide-react-native": "^1.61.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "react-native": "0.88.0",
+    "react-native": "0.88.1",
     "react-native-safe-area-context": "~5.10.1",
     "react-native-screens": "~4.30.0",
     "react-native-svg": "15.16.0",
@@ -29,23 +29,24 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^2.0.7",
     "@types/react": "~19.3.0",
-    "hermes-parser": "^0.37.0",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~58.0.4",
+    "firebase-tools": "^15.37.0",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3"
   },
-  "overrides": {
-    "hermes-parser": "^0.37.0",
-    "@react-native/codegen": "0.88.0"
-  },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
-    "test": "tsx --test tests/**/*.test.ts",
+    "test": "tsx --test \"tests/unit/**/*.test.ts\"",
     "type-check": "tsc --noEmit",
-    "postinstall": "node scripts/patch-rn-polyfills.js"
+    "lint": "expo lint",
+    "test:emulator": "firebase emulators:exec --only auth,firestore,storage --project demo-mouthjournal \"tsx --test --test-concurrency=1 \\\"tests/emulator/**/*.test.ts\\\"\"",
+    "test:all": "npm test && npm run test:emulator"
   },
   "private": true
 }

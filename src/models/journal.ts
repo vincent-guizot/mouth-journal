@@ -1,48 +1,16 @@
 /**
- * 📖 Journal & Review Domain Models
+ * 📖 Journal & Review Domain Models — derived from the Zod contract so the type and
+ * the runtime validation can never drift apart.
  */
+import { z } from 'zod';
+import { CriteriaRatingSchema, JournalSchema, MenuItemSchema } from '../schemas/journalSchema';
 
-export interface CriteriaRating {
-  taste: number;      // Rasa (1-5)
-  ambiance: number;   // Suasana (1-5)
-  service: number;    // Pelayanan (1-5)
-  price: number;      // Kesesuaian Harga / Value for Money (1-5)
-}
+export type CriteriaRating = z.infer<typeof CriteriaRatingSchema>;
+export type MenuItem = z.infer<typeof MenuItemSchema>;
+export type Journal = z.infer<typeof JournalSchema>;
 
-export interface MenuItem {
-  id: string;
-  name: string;
-  price: number;
-  category?: 'food' | 'drink' | 'dessert' | 'snack';
-  rating?: number;
-  isRecommended?: boolean;
-  photoUrl?: string;
-  notes?: string;
-}
-
-export interface Journal {
-  id: string;
-  userId: string;
-  userName?: string;
-  placeId: string;
-  placeName: string;
-  placeAddress: string;
-  mainCategory: 'food' | 'drinks' | 'wisata';
-  subCategory: string;
-  subCategoryLabel: string;
-  latitude: number;
-  longitude: number;
-  photoUrls: string[];
-  overallRating: number;
-  criteriaRating: CriteriaRating;
-  menuItems: MenuItem[];
-  totalSpent: number;
-  reviewText: string;
-  tags: string[];
-  visitedAt: string; // ISO 8601 Date
-  createdAt: string; // ISO 8601 Date
-  updatedAt?: string; // ISO 8601 Date
-}
+/** Fields the client is allowed to author. id/userId/createdAt/updatedAt are owned by the repository. */
+export type JournalDraft = Omit<Journal, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
 
 // Alias for backward compatibility with DiaryEntry
 export type DiaryEntry = Journal;

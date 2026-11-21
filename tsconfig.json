@@ -5,6 +5,8 @@
   },
   "exclude": [
     "node_modules",
-    "tests"
+    "tests",
+    "App.tsx",
+    "src/mocks"
   ]
 }

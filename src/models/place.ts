@@ -1,29 +1,8 @@
-/**
- * 🗺️ Place & Geocoding Domain Models
- */
+/** 🗺️ Place & Geocoding Domain Models — derived from the Zod contract. */
+import { z } from 'zod';
+import { PlaceSchema } from '../schemas/placeSchema';
 
-export interface Place {
-  id: string;
-  providerId: 'osm' | 'manual';
-  osmId?: string | number;
-  name: string;
-  address: string;
-  mainCategory: 'food' | 'drinks' | 'wisata';
-  mainCategoryLabel: string;
-  subCategory: string;
-  subCategoryLabel: string;
-  latitude: number;
-  longitude: number;
-  phone?: string;
-  openingHours?: string;
-  cuisine?: string;
-  distanceMeter?: number;
-  photoUrl?: string;
-  tags?: string[];
-  ratingAverage?: number;
-  ratingCount?: number;
-  retrievedAt?: string; // ISO 8601
-}
+export type Place = z.infer<typeof PlaceSchema>;
 
 export interface UserLocation {
   latitude: number;
@@ -31,7 +10,8 @@ export interface UserLocation {
   address?: string;
   city?: string;
   district?: string;
+  /** 'gps' when from the device, 'default' when GPS was unavailable/denied. */
+  source?: 'gps' | 'default';
 }
 
-// Backward compatibility alias
 export type NearbyPlace = Place;

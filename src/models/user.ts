@@ -1,21 +1,5 @@
-/**
- * 👤 User Profile Domain Model
- */
-export interface UserProfile {
-  uid: string;
-  email: string;
-  displayName: string;
-  username?: string;
-  phoneNumber?: string;
-  bio?: string;
-  photoURL?: string;
-  bannerURL?: string;
-  culinaryPreferences?: string[];
-  favoriteVenueTypes?: string[];
-  budgetPerVisit?: string;
-  favoriteLocations?: string[];
-  socialInstagram?: string;
-  socialTikTok?: string;
-  createdAt?: string; // ISO 8601
-  updatedAt?: string; // ISO 8601
-}
+/** 👤 User Profile Domain Model — derived from the Zod contract. */
+import { z } from 'zod';
+import { UserProfileSchema } from '../schemas/userSchema';
+
+export type UserProfile = z.infer<typeof UserProfileSchema>;

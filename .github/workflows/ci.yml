@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  validate:
+    name: Type-check, Lint & Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21 (Required for Firebase Emulators)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run TypeScript type-check
+        run: npm run type-check
+
+      - name: Run Expo Linter
+        run: npx expo lint
+
+      - name: Run Unit Tests
+        run: npm test
+
+      - name: Run Firebase Emulator Integration Tests
+        run: npm run test:emulator

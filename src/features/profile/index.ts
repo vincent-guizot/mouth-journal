@@ -5,3 +5,7 @@ export * from './components/ProfileStatsBar';
 export * from './components/ProfileBadgesSection';
 export * from './components/ProfileTabs';
 export * from './components/ProfileJournalItem';
+export * from './components/ProfilePlaceItem';
+export * from './components/ProfileDishItem';
+export * from './components/ProfileWishlistItem';
+export * from './profileAggregation';

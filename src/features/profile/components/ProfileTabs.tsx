@@ -8,6 +8,8 @@ interface ProfileTabsProps {
   onTabChange: (tab: ProfileTab) => void;
   journalsCount: number;
   placesCount: number;
+  menuCount: number;
+  wishlistCount: number;
 }
 
 export const ProfileTabs: React.FC<ProfileTabsProps> = ({
@@ -15,6 +17,8 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
   onTabChange,
   journalsCount,
   placesCount,
+  menuCount,
+  wishlistCount,
 }) => {
   return (
     <View style={styles.tabContainer}>
@@ -62,7 +66,7 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
             activeTab === 'menu' && styles.tabButtonTextActive,
           ]}
         >
-          Menu (36)
+          Menu ({menuCount})
         </Text>
       </TouchableOpacity>
 
@@ -78,7 +82,7 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
             activeTab === 'wishlist' && styles.tabButtonTextActive,
           ]}
         >
-          Wishlist (8)
+          Wishlist ({wishlistCount})
         </Text>
       </TouchableOpacity>
     </View>

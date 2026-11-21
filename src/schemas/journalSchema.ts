@@ -6,6 +6,7 @@ import {
   MainCategorySchema,
   SafeIdSchema,
   photoUriSchema,
+  LocalImageUriSchema,
 } from './common';
 
 /** Star input is 1..5 whole stars; 0 means "not rated yet" and is never persisted. */
@@ -60,6 +61,7 @@ const journalObject = (allowLocal: boolean) =>
     latitude: LatitudeSchema.nullable(),
     longitude: LongitudeSchema.nullable(),
     photoUrls: z.array(photoUriSchema(allowLocal)).max(10).default([]),
+    pendingPhotoUris: z.array(LocalImageUriSchema).max(10).optional(),
     overallRating: z.number().min(1).max(5),
     criteriaRating: CriteriaRatingSchema,
     menuItems: z.array(menuItemSchema(allowLocal)).max(50).default([]),

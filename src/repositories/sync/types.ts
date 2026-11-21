@@ -1,5 +1,7 @@
 import type { Firestore } from 'firebase/firestore';
+import type { FirebaseStorage } from 'firebase/storage';
 import type { KeyValueStore } from '../../storage/keyValueStore';
+import type { ImageFolder } from '../../services/images/imageUpload';
 
 /**
  * Outcome of a mutation:
@@ -38,7 +40,9 @@ export interface SyncState {
 export interface RepositoryDeps {
   mode: 'firebase' | 'demo' | 'unconfigured';
   db: Firestore | null;
+  storage?: FirebaseStorage | null;
   kv: KeyValueStore;
   remoteTimeoutMs?: number;
   now?: () => Date;
+  uploadPhoto?: (uri: string, userId: string, folder: ImageFolder) => Promise<{ url: string }>;
 }

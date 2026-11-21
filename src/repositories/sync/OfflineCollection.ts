@@ -191,7 +191,9 @@ export class OfflineCollection<T extends { id: string; userId: string }> {
     const ref = this.docRef(userId, op.docId);
     const label = `Firestore ${op.kind} ${this.cfg.name}/${op.docId}`;
     if (op.kind === 'upsert') {
-      await withTimeout(setDoc(ref, stripUndefined(op.data) as Record<string, unknown>), this.timeoutMs, label);
+      const stripped = stripUndefined(op.data) as Record<string, unknown>;
+      const { pendingPhotoUris: _pending, ...payload } = stripped;
+      await withTimeout(setDoc(ref, payload), this.timeoutMs, label);
     } else {
       await withTimeout(deleteDoc(ref), this.timeoutMs, label);
     }

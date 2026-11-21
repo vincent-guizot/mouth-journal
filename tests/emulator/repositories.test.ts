@@ -148,6 +148,47 @@ describe('Journal repository (offline-first)', () => {
     assert.ok(!list.some((j) => j.placeName === 'Delete Me'));
   });
 
+  test('offline journal with pendingPhotoUris is stored locally, never sent to Firestore with local URI, and syncs cloud URLs when online', async () => {
+    const { journalRepository } = bundle();
+    await disableNetwork(client.db);
+    let createdJournalId = '';
+    try {
+      const offline = await journalRepository.createJournal(
+        uid,
+        validJournalDraft({
+          placeName: 'Offline With Photo',
+          photoUrls: [],
+          pendingPhotoUris: ['file:///cache/food.jpg'],
+        })
+      );
+      assert.equal(offline.sync, 'pending');
+      createdJournalId = offline.data.id;
+      assert.deepEqual(offline.data.pendingPhotoUris, ['file:///cache/food.jpg']);
+
+      const photoTasks = await journalRepository.photoQueue.getQueue(uid);
+      assert.equal(photoTasks.length, 1);
+      assert.equal(photoTasks[0].journalId, createdJournalId);
+    } finally {
+      await enableNetwork(client.db);
+    }
+
+    const fakeCloudUrl = 'https://firebasestorage.googleapis.com/v0/b/demo/o/uploaded.jpg?alt=media';
+    await journalRepository.syncPending(uid, async () => ({ url: fakeCloudUrl }));
+
+    const updated = await journalRepository.getJournalById(uid, createdJournalId);
+    assert.ok(updated);
+    assert.deepEqual(updated.photoUrls, [fakeCloudUrl]);
+    assert.equal(updated.pendingPhotoUris, undefined);
+
+    const tasksAfter = await journalRepository.photoQueue.getQueue(uid);
+    assert.equal(tasksAfter.length, 0);
+
+    const docSnap = await serverDoc('users', uid, 'journals', createdJournalId);
+    assert.ok(docSnap.exists());
+    assert.deepEqual(docSnap.data()?.photoUrls, [fakeCloudUrl]);
+    assert.equal(docSnap.data()?.pendingPhotoUris, undefined);
+  });
+
   test('cache never leaks between users sharing one device storage', async () => {
     const kv = createMemoryKeyValueStore();
     const repoA = createRepositoryBundle({ mode: 'firebase', db: client.db, kv, remoteTimeoutMs: 3000 }).journalRepository;

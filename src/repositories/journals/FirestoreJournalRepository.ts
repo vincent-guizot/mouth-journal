@@ -4,6 +4,8 @@ import { generateId } from '../../utils/ids';
 import { OfflineCollection } from '../sync/OfflineCollection';
 import { MutationResult, RepositoryDeps, SyncState } from '../sync/types';
 import { IJournalRepository } from './IJournalRepository';
+import { PhotoUploadQueue } from '../../services/images/PhotoUploadQueue';
+import { ImageFolder, uploadImage } from '../../services/images/imageUpload';
 
 export class JournalNotFoundError extends Error {
   readonly code = 'app/journal-not-found';
@@ -25,8 +27,10 @@ const stripOwnedFields = <T extends object>(input: T) => {
  */
 export class FirestoreJournalRepository implements IJournalRepository {
   private readonly store: OfflineCollection<Journal>;
+  readonly photoQueue: PhotoUploadQueue;
 
   constructor(private readonly deps: RepositoryDeps) {
+    this.photoQueue = new PhotoUploadQueue(deps.kv);
     this.store = new OfflineCollection<Journal>(deps, {
       name: 'journals',
       path: (uid) => ['users', uid, 'journals'],
@@ -58,6 +62,13 @@ export class FirestoreJournalRepository implements IJournalRepository {
       userId,
       createdAt: now,
     });
+    if (journal.pendingPhotoUris && journal.pendingPhotoUris.length > 0) {
+      await this.photoQueue.enqueue({
+        journalId: journal.id,
+        userId,
+        localUris: journal.pendingPhotoUris,
+      });
+    }
     const sync = await this.store.mutate(userId, { kind: 'upsert', data: journal });
     return { data: journal, sync };
   }
@@ -79,6 +90,15 @@ export class FirestoreJournalRepository implements IJournalRepository {
       createdAt: existing.createdAt,
       updatedAt: this.store.now().toISOString(),
     });
+    if (journal.pendingPhotoUris && journal.pendingPhotoUris.length > 0) {
+      await this.photoQueue.enqueue({
+        journalId: journal.id,
+        userId,
+        localUris: journal.pendingPhotoUris,
+      });
+    } else {
+      await this.photoQueue.remove(userId, journal.id);
+    }
     const sync = await this.store.mutate(userId, { kind: 'upsert', data: journal });
     return { data: journal, sync };
   }
@@ -86,6 +106,7 @@ export class FirestoreJournalRepository implements IJournalRepository {
   async deleteJournal(userId: string, journalId: string): Promise<MutationResult<{ id: string }>> {
     this.store.assertUsable(userId);
     if (!journalId) throw new Error('Journal ID wajib diisi.');
+    await this.photoQueue.remove(userId, journalId);
     const sync = await this.store.mutate(userId, { kind: 'delete', docId: journalId });
     return { data: { id: journalId }, sync };
   }
@@ -94,7 +115,41 @@ export class FirestoreJournalRepository implements IJournalRepository {
     return this.store.getSyncState(userId);
   }
 
-  syncPending(userId: string): Promise<SyncState> {
+  async syncPending(
+    userId: string,
+    uploadPhotoFn?: (uri: string, userId: string, folder: ImageFolder) => Promise<{ url: string }>
+  ): Promise<SyncState> {
+    if (this.deps.mode === 'firebase') {
+      const upload =
+        uploadPhotoFn ??
+        this.deps.uploadPhoto ??
+        (this.deps.storage
+          ? (uri: string, uid: string, folder: ImageFolder) =>
+              uploadImage({ mode: this.deps.mode, storage: this.deps.storage! }, { uri, userId: uid, folder })
+          : undefined);
+      if (upload) {
+        await this.photoQueue
+          .processQueue(userId, {
+            uploadPhoto: upload,
+            onJournalPhotosUploaded: async (journalId, cloudUrls) => {
+              const j = await this.store.get(userId, journalId);
+              if (j) {
+                const updatedPhotoUrls = [...j.photoUrls, ...cloudUrls];
+                const { pendingPhotoUris: _p, ...rest } = j;
+                await this.store.mutate(userId, {
+                  kind: 'upsert',
+                  data: {
+                    ...rest,
+                    photoUrls: updatedPhotoUrls,
+                    updatedAt: this.store.now().toISOString(),
+                  },
+                });
+              }
+            },
+          })
+          .catch((e) => console.warn('[PhotoQueue] sync error:', e));
+      }
+    }
     return this.store.flush(userId);
   }
 
@@ -102,7 +157,8 @@ export class FirestoreJournalRepository implements IJournalRepository {
     return this.store.retryFailed(userId);
   }
 
-  clearUserCache(userId: string): Promise<void> {
+  async clearUserCache(userId: string): Promise<void> {
+    await this.photoQueue.clear(userId);
     return this.store.clear(userId);
   }
 }

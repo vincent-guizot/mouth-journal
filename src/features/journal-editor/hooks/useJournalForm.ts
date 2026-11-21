@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
 import { NearbyPlace } from '../../../models/place';
 import { Journal } from '../../../models/journal';
 import { journalRepository } from '../../../repositories';
 import { SyncStatus } from '../../../repositories/sync/types';
 import { ImageService, isRemoteImageUrl } from '../../../services/firebase/imageService';
 import { generateId } from '../../../utils/ids';
+import { feedback } from '../../../components/feedback';
 import { ExperienceRatings, JournalPlaceSelection, MenuItemRow } from '../types';
 import {
   EMPTY_PLACE,
@@ -81,7 +81,7 @@ export function useJournalForm({ initialPlace, initialJournal, userId, userName,
       const uri = await ImageService.pickImage();
       if (uri) setPhotos((prev) => [...prev, uri]);
     } catch (err) {
-      Alert.alert('Gagal Memilih Foto', err instanceof Error ? err.message : String(err));
+      feedback.showAlert('Gagal Memilih Foto', err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -126,14 +126,30 @@ export function useJournalForm({ initialPlace, initialJournal, userId, userName,
         visitedAt,
       });
 
-      const uploaded = await uploadLocalImages();
+      let uploaded: Map<string, string> = new Map();
+      let uploadFailed = false;
+      const localPhotos = photos.filter((p) => !isRemoteImageUrl(p));
+
+      try {
+        uploaded = await uploadLocalImages();
+      } catch {
+        // Offline or upload failure: keep local photos in pendingPhotoUris
+        uploadFailed = true;
+      }
+
       const resolve = (uri: string) => uploaded.get(uri) ?? uri;
+      const cloudPhotoUrls = uploadFailed
+        ? photos.filter(isRemoteImageUrl)
+        : photos.map(resolve).filter(isRemoteImageUrl);
+      const pendingUris = uploadFailed && localPhotos.length > 0 ? localPhotos : undefined;
+
       const draft = buildJournalDraft({
         place: selectedPlace,
         categoryId: selectedCategory,
         ratings: experienceRatings,
         menuItems: menuItems.map((m) => ({ ...m, image: m.image ? resolve(m.image) : undefined })),
-        photoUrls: photos.map(resolve),
+        photoUrls: cloudPhotoUrls,
+        pendingPhotoUris: pendingUris,
         reviewText: reviewNote,
         visitedAt,
         userName,
@@ -144,11 +160,15 @@ export function useJournalForm({ initialPlace, initialJournal, userId, userName,
         ? await journalRepository.updateJournal(userId, initialJournal.id, draft)
         : await journalRepository.createJournal(userId, draft);
 
-      // Navigate independently of the dialog: Alert is a no-op on react-native-web.
-      Alert.alert(initialJournal ? 'Jurnal Diperbarui' : 'Jurnal Tersimpan', `"${draft.placeName}": ${SYNC_MESSAGES[result.sync]}`);
+      const message = uploadFailed
+        ? `"${draft.placeName}": Tersimpan di perangkat. Foto akan diunggah otomatis saat online.`
+        : `"${draft.placeName}": ${SYNC_MESSAGES[result.sync]}`;
+
+      // Navigate independently of the dialog; feedback displays toast and alert across web and mobile.
+      feedback.showAlert(initialJournal ? 'Jurnal Diperbarui' : 'Jurnal Tersimpan', message);
       onSuccess();
     } catch (err) {
-      Alert.alert('Gagal Menyimpan', err instanceof Error ? err.message : String(err));
+      feedback.showAlert('Gagal Menyimpan', err instanceof Error ? err.message : String(err));
     } finally {
       setIsSubmitting(false);
     }

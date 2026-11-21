@@ -122,17 +122,11 @@ export const AutoRecommendedCarousel: React.FC<AutoRecommendedCarouselProps> = (
                   {place.name}
                 </Text>
 
-                <View style={styles.ratingRow}>
-                  <Star size={12} color={theme.colors.amber} fill={theme.colors.amber} />
-                  <Text style={styles.ratingText}>{place.ratingAverage || 4.8}</Text>
-                  <Text style={styles.dot}>•</Text>
-                  <Text style={styles.visitText}>{place.userVisitedCount || 40}+ dikunjungi</Text>
-                </View>
-
-                {place.recommendationReason ? (
-                  <Text style={styles.reasonText} numberOfLines={2}>
-                    💡 {place.recommendationReason}
-                  </Text>
+                {place.ratingAverage ? (
+                  <View style={styles.ratingRow}>
+                    <Star size={12} color={theme.colors.amber} fill={theme.colors.amber} />
+                    <Text style={styles.ratingText}>{place.ratingAverage}</Text>
+                  </View>
                 ) : null}
 
                 <View style={styles.actionRow}>

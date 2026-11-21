@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { NearbyPlace } from '../types/places';
 import { theme } from '../config/theme';
-import { MapPin, MoreVertical, Heart, Star } from 'lucide-react-native';
+import { MapPin, Heart, Star } from 'lucide-react-native';
+import { formatDistance } from '../utils/geo';
 
 interface PlaceCardProps {
   place: NearbyPlace;
@@ -17,26 +18,8 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({
   onWishlistToggle,
   isWishlisted = false,
 }) => {
-  const formattedDistance =
-    place.distanceMeter && place.distanceMeter >= 1000
-      ? `${(place.distanceMeter / 1000).toFixed(1)} km`
-      : `${place.distanceMeter || 800} m`;
-
-  const fallbackImage =
-    place.photoUrl ||
-    (place.mainCategory === 'drinks'
-      ? 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&auto=format&fit=crop&q=80'
-      : place.mainCategory === 'wisata'
-      ? 'https://images.unsplash.com/photo-1519331379826-f10be5486c6f?w=800&auto=format&fit=crop&q=80'
-      : 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80');
-
-  const reviewSnippet =
-    place.cuisine ||
-    (place.mainCategory === 'drinks'
-      ? 'Tempatnya nyaman, kopi enak, croissantnya juga flaky banget. Cocok buat kerja sambil ngopi.'
-      : place.mainCategory === 'wisata'
-      ? 'Taman yang asri, udara segar dan spot foto estetik di tengah kota.'
-      : 'Menu andalan lezat, suasana nyaman dan pelayanan sangat ramah.');
+  const formattedDistance = place.distanceMeter !== undefined ? formatDistance(place.distanceMeter) : null;
+  const details = [place.cuisine?.replace(/_/g, ' ').replace(/;/g, ', '), place.openingHours].filter(Boolean).join(' · ');
 
   return (
     <TouchableOpacity
@@ -46,7 +29,13 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({
     >
       {/* Kolom Kiri: Foto Tempat dengan Badge Jarak & Tombol Wishlist */}
       <View style={styles.imageCol}>
-        <Image source={{ uri: fallbackImage }} style={styles.thumbnail} resizeMode="cover" />
+        {place.photoUrl ? (
+          <Image source={{ uri: place.photoUrl }} style={styles.thumbnail} resizeMode="cover" />
+        ) : (
+          <View style={[styles.thumbnail, styles.thumbPlaceholder]}>
+            <MapPin size={26} color={theme.colors.terracotta} />
+          </View>
+        )}
         
         {/* Wishlist Heart Icon */}
         <TouchableOpacity
@@ -62,10 +51,12 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({
         </TouchableOpacity>
 
         {/* Distance Badge */}
-        <View style={styles.distanceBadge}>
-          <MapPin size={10} color="#FFFFFF" />
-          <Text style={styles.distanceText}>{formattedDistance}</Text>
-        </View>
+        {formattedDistance && (
+          <View style={styles.distanceBadge}>
+            <MapPin size={10} color="#FFFFFF" />
+            <Text style={styles.distanceText}>{formattedDistance}</Text>
+          </View>
+        )}
       </View>
 
       {/* Kolom Kanan: Detail Tempat */}
@@ -74,9 +65,7 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({
           <Text style={styles.title} numberOfLines={1}>
             {place.name}
           </Text>
-          <TouchableOpacity hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-            <MoreVertical size={16} color={theme.colors.textTertiary} />
-          </TouchableOpacity>
+
         </View>
 
         {/* Location & Category Pill */}
@@ -94,33 +83,35 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({
           </View>
         </View>
 
-        {/* Rating Stars & Count */}
+        {/* OSM provides no ratings; show a rating only if a real source supplied one. */}
         <View style={styles.ratingRow}>
-          <View style={styles.starsGroup}>
-            {[1, 2, 3, 4, 5].map((s) => (
-              <Star
-                key={s}
-                size={12}
-                color={theme.colors.caramel}
-                fill={theme.colors.caramel}
-                style={{ marginRight: 1 }}
-              />
-            ))}
-          </View>
-          <Text style={styles.ratingScore}>{place.ratingAverage || 4.5}</Text>
-          <Text style={styles.reviewCount}>({place.userVisitedCount ? `${place.userVisitedCount}K` : '850'})</Text>
+          {place.ratingAverage !== undefined ? (
+            <>
+              <Star size={12} color={theme.colors.caramel} fill={theme.colors.caramel} style={{ marginRight: 3 }} />
+              <Text style={styles.ratingScore}>{place.ratingAverage.toFixed(1)}</Text>
+              {place.ratingCount !== undefined && <Text style={styles.reviewCount}>({place.ratingCount})</Text>}
+            </>
+          ) : (
+            <Text style={styles.reviewCount}>Belum ada rating</Text>
+          )}
         </View>
 
-        {/* Review Snippet */}
-        <Text style={styles.descriptionText} numberOfLines={2}>
-          {reviewSnippet}
-        </Text>
+        {details ? (
+          <Text style={styles.descriptionText} numberOfLines={2}>
+            {details}
+          </Text>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
+  thumbPlaceholder: {
+    backgroundColor: '#FAF5EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   card: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',

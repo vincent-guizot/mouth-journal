@@ -1,16 +1,39 @@
 import * as Location from 'expo-location';
-import { UserLocation } from '../../types/places';
+import { UserLocation } from '../../models/place';
 
 // Default fallback jika GPS belum aktif atau di simulator (Area Senopati / Jaksel)
-const DEFAULT_FALLBACK_LOCATION: UserLocation = {
+/**
+ * Shown only when GPS is denied/unavailable. Marked source: 'default' so the UI can
+ * say the location is not the user's real position.
+ */
+export const DEFAULT_FALLBACK_LOCATION: UserLocation = {
   latitude: -6.229746,
   longitude: 106.816431,
   city: 'Jakarta Selatan',
   district: 'Kebayoran Baru',
-  address: 'Kawasan Senopati, Jakarta Selatan'
+  address: 'Kawasan Senopati, Jakarta Selatan',
+  source: 'default',
 };
 
 export class LocationService {
+  private static async getPositionWithTimeout() {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    try {
+      return await Promise.race([
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+        new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(
+            () => reject(new Error('Waktu pengambilan lokasi habis.')),
+            12000
+          );
+        }),
+      ]);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  }
+
   /**
    * Meminta izin akses lokasi dan mengembalikan posisi GPS pengguna saat ini
    */
@@ -22,9 +45,7 @@ export class LocationService {
         return DEFAULT_FALLBACK_LOCATION;
       }
 
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
+      const location = await this.getPositionWithTimeout();
 
       const { latitude, longitude } = location.coords;
 
@@ -50,7 +71,8 @@ export class LocationService {
         longitude,
         address,
         city,
-        district
+        district,
+        source: 'gps',
       };
     } catch (error) {
       console.warn('[LocationService] Gagal mengambil lokasi GPS:', error);

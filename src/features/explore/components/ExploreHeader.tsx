@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { MapPin, Map as MapIcon, List as ListIcon } from 'lucide-react-native';
+import { MapPin, Map as MapIcon, List as ListIcon, RefreshCw } from 'lucide-react-native';
 import { theme } from '../../../config/theme';
 import { UserLocation } from '../../../types/places';
 
@@ -8,26 +8,43 @@ interface ExploreHeaderProps {
   userLocation: UserLocation;
   viewMode: 'map' | 'list';
   onToggleViewMode: (mode: 'map' | 'list') => void;
+  onRefreshLocation?: () => void;
+  isRefreshingLocation?: boolean;
 }
 
 export const ExploreHeader: React.FC<ExploreHeaderProps> = ({
   userLocation,
   viewMode,
   onToggleViewMode,
+  onRefreshLocation,
+  isRefreshingLocation = false,
 }) => {
   return (
     <View style={styles.headerRow}>
-      <View style={styles.locationGroup}>
+      <TouchableOpacity
+        style={styles.locationGroup}
+        onPress={onRefreshLocation}
+        disabled={!onRefreshLocation || isRefreshingLocation}
+        accessibilityRole="button"
+        accessibilityLabel="Perbarui lokasi saat ini"
+      >
         <View style={styles.locationIconWrapper}>
           <MapPin size={16} color="#D04A1E" />
         </View>
         <View>
           <Text style={styles.locationLabel}>Lokasi Kamu</Text>
           <Text style={styles.locationName} numberOfLines={1}>
-            {userLocation.district || userLocation.city || 'Kemanggisan, Jakarta Barat'}
+            {userLocation.source === 'gps'
+              ? userLocation.district || userLocation.city || 'Lokasi saat ini'
+              : 'Lokasi default (GPS tidak aktif)'}
           </Text>
         </View>
-      </View>
+        <RefreshCw
+          size={14}
+          color="#8A7A6D"
+          style={isRefreshingLocation ? styles.refreshIcon : undefined}
+        />
+      </TouchableOpacity>
 
       <View style={styles.toggleModeGroup}>
         <TouchableOpacity
@@ -88,6 +105,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     marginRight: 10,
+  },
+  refreshIcon: {
+    opacity: 0.45,
   },
   locationIconWrapper: {
     width: 32,

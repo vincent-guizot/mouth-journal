@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, ActivityIndicator, TouchableOpacity, ViewStyle } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, TouchableOpacity, ViewStyle, DimensionValue } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { UserLocation } from '../../types/places';
 import { MAP_PIN_THEME, getPinStyleForCategory } from '../../config/mapPinTheme';
@@ -27,7 +27,7 @@ export interface InteractiveMapProps {
   onMarkerSelect?: (marker: MapMarkerItem) => void;
   onMapPress?: (coords: { latitude: number; longitude: number }) => void;
   zoom?: number;
-  height?: number | string;
+  height?: DimensionValue;
   showControls?: boolean;
   style?: ViewStyle;
 }
@@ -45,7 +45,10 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   style,
 }) => {
   const htmlContent = useMemo(() => {
-    const markersJson = JSON.stringify(markers);
+    const markersJson = JSON.stringify(markers)
+      .replace(/</g, '\\u003c')
+      .replace(/>/g, '\\u003e')
+      .replace(/&/g, '\\u0026');
     const themeJson = JSON.stringify(MAP_PIN_THEME);
     const selectedId = selectedMarkerId || '';
 
@@ -190,6 +193,15 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             '</div>';
           }
 
+          function escapeHtml(value) {
+            return String(value)
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#039;');
+          }
+
           // 3. Render Setiap Marker Pinpoint
           markers.forEach(m => {
             const cat = m.mainCategory || 'food';
@@ -216,8 +228,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             const popupHtml = 
               '<div class="popup-content">' +
                 '<span class="popup-badge" style="background-color: ' + bgColor + ';">' + emoji + ' ' + (m.subCategoryLabel || cat.toUpperCase()) + '</span>' +
-                '<div class="popup-title">' + m.name + '</div>' +
-                '<div class="popup-address">' + (m.address || '') + '</div>' +
+                '<div class="popup-title">' + escapeHtml(m.name) + '</div>' +
+                '<div class="popup-address">' + escapeHtml(m.address || '') + '</div>' +
               '</div>';
             marker.bindPopup(popupHtml);
 

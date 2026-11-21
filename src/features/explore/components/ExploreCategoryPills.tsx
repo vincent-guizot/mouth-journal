@@ -4,22 +4,21 @@ import {
   LayoutGrid,
   Coffee,
   Utensils,
-  Sandwich,
-  Cake,
-} from 'lucide-react-native';
+  Trees, } from 'lucide-react-native';
 import { theme } from '../../../config/theme';
+
+export type ExploreCategory = 'all' | 'drinks' | 'food' | 'wisata';
 
 interface ExploreCategoryPillsProps {
   selectedCategory: string;
-  onSelectCategory: (categoryId: string) => void;
+  onSelectCategory: (categoryId: ExploreCategory) => void;
 }
 
-const CATEGORIES = [
+const CATEGORIES: { id: ExploreCategory; label: string; icon: typeof Coffee }[] = [
   { id: 'all', label: 'Semua', icon: LayoutGrid },
   { id: 'drinks', label: 'Kopi & Minuman', icon: Coffee },
   { id: 'food', label: 'Restoran', icon: Utensils },
-  { id: 'street_food', label: 'Street Food', icon: Sandwich },
-  { id: 'dessert', label: 'Dessert', icon: Cake },
+  { id: 'wisata', label: 'Wisata', icon: Trees },
 ];
 
 export const ExploreCategoryPills: React.FC<ExploreCategoryPillsProps> = ({

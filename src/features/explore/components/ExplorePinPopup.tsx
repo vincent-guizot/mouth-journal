@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Star, MapPin, ChevronRight, Bookmark } from 'lucide-react-native';
-import { MapPinData } from '../../../mocks/data/mockMapPins';
+import { NearbyPlace } from '../../../types/places';
 import { theme } from '../../../config/theme';
 
 interface ExplorePinPopupProps {
-  pin: MapPinData;
+  place: NearbyPlace;
   onPress: () => void;
   onClose?: () => void;
   onToggleWishlist?: () => void;
@@ -13,7 +13,7 @@ interface ExplorePinPopupProps {
 }
 
 export const ExplorePinPopup: React.FC<ExplorePinPopupProps> = ({
-  pin,
+  place,
   onPress,
   onClose,
   onToggleWishlist,
@@ -25,11 +25,15 @@ export const ExplorePinPopup: React.FC<ExplorePinPopupProps> = ({
       onPress={onPress}
       activeOpacity={0.92}
     >
-      <Image source={{ uri: pin.photoUrl }} style={styles.thumbnail} resizeMode="cover" />
+      {place.photoUrl ? (
+        <Image source={{ uri: place.photoUrl }} style={styles.thumbnail} resizeMode="cover" />
+      ) : (
+        <View style={[styles.thumbnail, { backgroundColor: '#FAF5EE' }]} />
+      )}
       <View style={styles.infoCol}>
         <View style={styles.headerRow}>
           <Text style={styles.name} numberOfLines={1}>
-            {pin.name}
+            {place.name}
           </Text>
           {onToggleWishlist && (
             <TouchableOpacity onPress={onToggleWishlist} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -45,16 +49,26 @@ export const ExplorePinPopup: React.FC<ExplorePinPopupProps> = ({
         <View style={styles.locationRow}>
           <MapPin size={11} color="#D04A1E" />
           <Text style={styles.address} numberOfLines={1}>
-            {pin.address}
+            {place.address || 'Alamat tidak tersedia'}
           </Text>
         </View>
 
         <View style={styles.ratingRow}>
-          <Star size={12} color="#F39A28" fill="#F39A28" />
-          <Text style={styles.ratingText}>{pin.rating}</Text>
-          <Text style={styles.ratingCount}>{pin.ratingCount}</Text>
+          {place.ratingAverage !== undefined && (
+            <>
+              <Star size={12} color="#F39A28" fill="#F39A28" />
+              <Text style={styles.ratingText}>{place.ratingAverage.toFixed(1)}</Text>
+            </>
+          )}
+          {place.distanceMeter !== undefined && (
+            <Text style={styles.ratingCount}>
+              {place.distanceMeter >= 1000
+                ? `${(place.distanceMeter / 1000).toFixed(1)} km`
+                : `${place.distanceMeter} m`}
+            </Text>
+          )}
           <Text style={styles.dot}>·</Text>
-          <Text style={styles.category}>{pin.category}</Text>
+          <Text style={styles.category}>{place.subCategoryLabel}</Text>
         </View>
       </View>
       <ChevronRight size={18} color="#8A7A6D" />

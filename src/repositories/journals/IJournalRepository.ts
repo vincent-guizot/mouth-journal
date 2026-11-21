@@ -1,33 +1,18 @@
-import { Journal } from '../../models/journal';
+import { Journal, JournalDraft } from '../../models/journal';
+import { MutationResult, SyncState } from '../sync/types';
 
 export interface IJournalRepository {
-  /**
-   * Mengambil seluruh jurnal milik pengguna tertentu
-   */
+  /** Journals owned by userId (validated, ownership-checked, pending changes applied). */
   getJournals(userId: string): Promise<Journal[]>;
-
-  /**
-   * Mengambil jurnal spesifik berdasarkan ID (dengan verifikasi kepemilikan)
-   */
+  /** null when the journal does not exist for this user. */
   getJournalById(userId: string, journalId: string): Promise<Journal | null>;
-
-  /**
-   * Menyimpan jurnal baru ke koleksi privat pengguna
-   */
-  createJournal(userId: string, journal: Omit<Journal, 'id'>): Promise<Journal>;
-
-  /**
-   * Memperbarui jurnal yang sudah ada milik pengguna
-   */
-  updateJournal(userId: string, journalId: string, updates: Partial<Journal>): Promise<Journal>;
-
-  /**
-   * Menghapus jurnal milik pengguna
-   */
-  deleteJournal(userId: string, journalId: string): Promise<void>;
-
-  /**
-   * Membersihkan cache lokal saat pengguna sign out
-   */
+  /** id/userId/createdAt are assigned by the repository, never by the caller. */
+  createJournal(userId: string, draft: JournalDraft): Promise<MutationResult<Journal>>;
+  /** id/userId/createdAt are immutable; updatedAt is set by the repository. */
+  updateJournal(userId: string, journalId: string, updates: Partial<JournalDraft>): Promise<MutationResult<Journal>>;
+  deleteJournal(userId: string, journalId: string): Promise<MutationResult<{ id: string }>>;
+  getSyncState(userId: string): Promise<SyncState>;
+  syncPending(userId: string): Promise<SyncState>;
+  retryFailed(userId: string): Promise<SyncState>;
   clearUserCache(userId: string): Promise<void>;
 }

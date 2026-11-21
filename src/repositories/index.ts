@@ -1,12 +1,6 @@
-import { FirestoreJournalRepository } from './journals/FirestoreJournalRepository';
-import { FirestoreWishlistRepository } from './wishlist/FirestoreWishlistRepository';
-import { FirestoreUserPreferencesRepository } from './user-preferences/FirestoreUserPreferencesRepository';
-import { FirestoreUserProfileRepository } from './user-profile/FirestoreUserProfileRepository';
-import { MockJournalRepository } from '../mocks/repositories/MockJournalRepository';
-import { MockWishlistRepository } from '../mocks/repositories/MockWishlistRepository';
-import { MockUserPreferencesRepository } from '../mocks/repositories/MockUserPreferencesRepository';
-import { MockUserProfileRepository } from '../mocks/repositories/MockUserProfileRepository';
-import { isFirebaseConfigured } from '../config/firebase';
+import { appMode, db } from '../config/firebase';
+import { asyncStorageKv } from '../storage/asyncStorageKv';
+import { createRepositoryBundle } from './createRepositories';
 
 export * from './journals/IJournalRepository';
 export * from './journals/FirestoreJournalRepository';
@@ -16,35 +10,17 @@ export * from './user-preferences/IUserPreferencesRepository';
 export * from './user-preferences/FirestoreUserPreferencesRepository';
 export * from './user-profile/IUserProfileRepository';
 export * from './user-profile/FirestoreUserProfileRepository';
+export * from './sync/types';
+export { createRepositoryBundle } from './createRepositories';
+export type { RepositoryBundle } from './createRepositories';
 
 /**
- * Repository Registry & Factory
- * Memungkinkan pergantian mulus antara Firebase dan Mock implementations
+ * App-wide singletons. In 'firebase' mode they talk to Firestore; in explicit
+ * 'demo' mode they are local-only; in 'unconfigured' mode every call fails loudly.
  */
-const shouldUseMocks = process.env.EXPO_PUBLIC_USE_MOCKS === 'true';
+export const repositories = createRepositoryBundle({ mode: appMode, db, kv: asyncStorageKv });
 
-export const createRepositoryBundle = (useMock: boolean = shouldUseMocks) => {
-  if (useMock) {
-    return {
-      journalRepository: new MockJournalRepository(),
-      wishlistRepository: new MockWishlistRepository(),
-      userPreferencesRepository: new MockUserPreferencesRepository(),
-      userProfileRepository: new MockUserProfileRepository(),
-    };
-  }
-
-  return {
-    journalRepository: new FirestoreJournalRepository(),
-    wishlistRepository: new FirestoreWishlistRepository(),
-    userPreferencesRepository: new FirestoreUserPreferencesRepository(),
-    userProfileRepository: new FirestoreUserProfileRepository(),
-  };
-};
-
-const defaultBundle = createRepositoryBundle();
-
-// Default exported singletons for application-wide consumption
-export const journalRepository = defaultBundle.journalRepository;
-export const wishlistRepository = defaultBundle.wishlistRepository;
-export const userPreferencesRepository = defaultBundle.userPreferencesRepository;
-export const userProfileRepository = defaultBundle.userProfileRepository;
+export const journalRepository = repositories.journalRepository;
+export const wishlistRepository = repositories.wishlistRepository;
+export const userPreferencesRepository = repositories.userPreferencesRepository;
+export const userProfileRepository = repositories.userProfileRepository;

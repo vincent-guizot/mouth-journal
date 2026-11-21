@@ -1,125 +1,169 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile } from '../models/user';
 import { UserLocation } from '../models/place';
-import { AuthService } from '../services/firebase/authService';
-import { LocationService } from '../services/places/locationService';
+import { AppMode, appMode } from '../config/firebase';
+import { authService, DeleteAccountReport, SessionUser } from '../services/firebase/authService';
+import { LocationService, DEFAULT_FALLBACK_LOCATION } from '../services/places/locationService';
+
+const ONBOARDING_KEY = '@mouthjournal_onboarding_completed';
 
 interface AuthContextType {
+  appMode: AppMode;
+  /** Verified identity from Firebase Auth (or the explicit demo session). */
+  session: SessionUser | null;
+  /** Firestore profile merged with the auth identity. */
   currentUser: UserProfile | null;
   isLoading: boolean;
+  /** Error while loading the profile/session; shown instead of faking a user. */
+  authError: string | null;
   userLocation: UserLocation;
   setUserLocation: (location: UserLocation) => void;
+  isRefreshingLocation: boolean;
+  refreshUserLocation: () => Promise<void>;
   onboardingCompleted: boolean | null;
-  login: (email: string, pass: string) => Promise<UserProfile>;
-  register: (email: string, pass: string, displayName?: string) => Promise<UserProfile>;
-  logout: () => Promise<void>;
-  updateUser: (profile: Partial<UserProfile>) => Promise<void>;
+  login: (email: string, pass: string) => Promise<void>;
+  register: (email: string, pass: string, displayName: string) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
+  logout: (options?: { discardPending?: boolean }) => Promise<void>;
+  updateProfile: (patch: Partial<UserProfile>) => Promise<{ emailVerificationSentTo?: string }>;
+  deleteAccount: (password: string) => Promise<DeleteAccountReport>;
   completeOnboarding: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
-const DEFAULT_LOCATION: UserLocation = {
-  latitude: -6.229746,
-  longitude: 106.816431,
-  city: 'Jakarta Selatan',
-  district: 'Senopati',
-  address: 'Senopati, Jakarta Selatan',
-};
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const fallbackProfile = (s: SessionUser): UserProfile => ({
+  uid: s.uid,
+  email: s.email,
+  displayName: s.displayName,
+  photoURL: s.photoURL,
+  culinaryPreferences: [],
+  favoriteVenueTypes: [],
+  favoriteLocations: [],
+});
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [session, setSession] = useState<SessionUser | null>(null);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [userLocation, setUserLocation] = useState<UserLocation>(DEFAULT_LOCATION);
+  const [authResolved, setAuthResolved] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<UserLocation>(DEFAULT_FALLBACK_LOCATION);
+  const [isRefreshingLocation, setIsRefreshingLocation] = useState(false);
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
+  const sessionRef = useRef<SessionUser | null>(null);
 
-  const initSession = async () => {
-    setIsLoading(true);
-    try {
-      // 1. Onboarding check
-      const onboarded = await AsyncStorage.getItem('@mouthjournal_onboarding_completed');
-      setOnboardingCompleted(onboarded === 'true');
-
-      // 2. User profile check
-      const user = await AuthService.getCurrentUser();
-      setCurrentUser(user);
-
-      // 3. User GPS location
-      const loc = await LocationService.getCurrentLocation();
-      if (loc) setUserLocation(loc);
-    } catch (err) {
-      console.warn('[AuthProvider] Initialization error:', err);
-    } finally {
-      setIsLoading(false);
+  const loadProfile = useCallback(async (s: SessionUser | null) => {
+    sessionRef.current = s;
+    setSession(s);
+    if (!s) {
+      setCurrentUser(null);
+      setAuthError(null);
+      return;
     }
-  };
-
-  useEffect(() => {
-    initSession();
+    try {
+      const profile = await authService.ensureProfile(s);
+      if (sessionRef.current?.uid === s.uid) {
+        setCurrentUser(profile);
+        setAuthError(null);
+      }
+    } catch (err) {
+      // The identity is real; only the profile document could not be loaded.
+      // Show the auth identity and surface the real error.
+      if (sessionRef.current?.uid === s.uid) {
+        setCurrentUser(fallbackProfile(s));
+        setAuthError(`Profil gagal dimuat: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
   }, []);
 
-  const login = async (email: string, pass: string) => {
-    const user = await AuthService.login(email, pass);
-    setCurrentUser(user);
-    return user;
-  };
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_KEY)
+      .then((v) => setOnboardingCompleted(v === 'true'))
+      .catch((err) => {
+        console.warn('[AuthProvider] Gagal membaca status onboarding:', err);
+        setOnboardingCompleted(false);
+      });
 
-  const register = async (email: string, pass: string, displayName?: string) => {
-    const user = await AuthService.register(email, pass, displayName);
-    setCurrentUser(user);
-    return user;
-  };
+    const unsubscribe = authService.subscribe(
+      (s) => {
+        loadProfile(s).finally(() => setAuthResolved(true));
+      },
+      (err) => setAuthError(err instanceof Error ? err.message : String(err))
+    );
+    return unsubscribe;
+  }, [loadProfile]);
 
-  const logout = async () => {
-    await AuthService.logout();
-    setCurrentUser(null);
-  };
-
-  const updateUser = async (profile: Partial<UserProfile>) => {
-    if (currentUser) {
-      const updated = { ...currentUser, ...profile };
-      setCurrentUser(updated);
-      await AsyncStorage.setItem('@mouthjournal_active_session', JSON.stringify(updated));
+  const refreshUserLocation = useCallback(async () => {
+    setIsRefreshingLocation(true);
+    try {
+      setUserLocation(await LocationService.getCurrentLocation());
+    } finally {
+      setIsRefreshingLocation(false);
     }
-  };
+  }, []);
 
-  const completeOnboarding = async () => {
-    await AsyncStorage.setItem('@mouthjournal_onboarding_completed', 'true');
-    setOnboardingCompleted(true);
-  };
+  useEffect(() => {
+    let active = true;
+    LocationService.getCurrentLocation().then((loc) => active && setUserLocation(loc));
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  const refreshUser = async () => {
-    const user = await AuthService.getCurrentUser();
-    setCurrentUser(user);
-  };
-
-  return (
-    <AuthContext.Provider
-      value={{
-        currentUser,
-        isLoading,
-        userLocation,
-        setUserLocation,
-        onboardingCompleted,
-        login,
-        register,
-        logout,
-        updateUser,
-        completeOnboarding,
-        refreshUser,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo<AuthContextType>(
+    () => ({
+      appMode,
+      session,
+      currentUser,
+      isLoading: !authResolved || onboardingCompleted === null,
+      authError,
+      userLocation,
+      setUserLocation,
+      isRefreshingLocation,
+      refreshUserLocation,
+      onboardingCompleted,
+      login: async (email, pass) => {
+        const s = await authService.login(email, pass);
+        await loadProfile(s);
+      },
+      register: async (email, pass, displayName) => {
+        const s = await authService.register(email, pass, displayName);
+        await loadProfile(s);
+      },
+      sendPasswordReset: (email) => authService.sendPasswordReset(email),
+      logout: async (options) => {
+        await authService.logout(options);
+        await loadProfile(null);
+      },
+      updateProfile: async (patch) => {
+        if (!session) throw new Error('Tidak ada sesi login.');
+        const result = await authService.updateAccountProfile(session.uid, patch);
+        setCurrentUser(result.profile);
+        return { emailVerificationSentTo: result.emailVerificationSentTo };
+      },
+      deleteAccount: async (password) => {
+        const report = await authService.deleteAccount(password);
+        await loadProfile(null);
+        return report;
+      },
+      completeOnboarding: async () => {
+        await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+        setOnboardingCompleted(true);
+      },
+      refreshUser: async () => {
+        await loadProfile(await authService.getCurrentSession());
+      },
+    }),
+    [session, currentUser, authResolved, authError, userLocation, isRefreshingLocation, refreshUserLocation, onboardingCompleted, loadProfile]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };

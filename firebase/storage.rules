@@ -2,27 +2,31 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return request.auth != null && request.auth.uid == userId;
     }
 
+    // Must match src/services/images/imageUpload.ts (MAX_IMAGE_BYTES, ALLOWED_IMAGE_TYPES).
     function isValidImage() {
-      return request.resource.contentType.matches('image/.*')
-        && request.resource.size <= 10 * 1024 * 1024; // Maks 10MB
+      return request.resource.size > 0
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('^image/(jpeg|png|webp|heic|heif)$');
     }
 
-    // Hanya pemilik yang dapat membaca dan mengunggah foto miliknya
+    // Listing the user's own tree is needed for account deletion (listAll).
     match /users/{userId}/{allPaths=**} {
-      allow read: if isOwner(userId);
-      allow write: if isOwner(userId) && isValidImage();
+      allow list: if isOwner(userId);
+    }
+
+    // Only the four known folders, one level deep: users/{uid}/{folder}/{file}
+    match /users/{userId}/{folder}/{fileName} {
+      allow get: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && folder in ['journals', 'menus', 'avatars', 'banners']
+        && isValidImage();
       allow delete: if isOwner(userId);
     }
 
-    // Blokir akses publik ke path lainnya
     match /{allPaths=**} {
       allow read, write: if false;
     }

@@ -1,30 +1,14 @@
-import { WishlistItem } from '../../models/wishlist';
+import { WishlistAddInput, WishlistItem } from '../../models/wishlist';
+import { MutationResult, SyncState } from '../sync/types';
 
+/** Wishlist entries are keyed by the real place ID (document ID === placeId). */
 export interface IWishlistRepository {
-  /**
-   * Mengambil semua item wishlist milik pengguna
-   */
   getWishlist(userId: string): Promise<WishlistItem[]>;
-
-  /**
-   * Menambahkan tempat ke wishlist pengguna
-   */
-  addToWishlist(userId: string, item: Omit<WishlistItem, 'id' | 'createdAt' | 'userId'>): Promise<WishlistItem>;
-  addWishlistItem?(userId: string, item: any): Promise<WishlistItem>;
-
-  /**
-   * Menghapus item dari wishlist
-   */
-  removeFromWishlist(userId: string, itemId: string): Promise<void>;
-  deleteWishlistItem?(userId: string, itemId: string): Promise<void>;
-
-  /**
-   * Cek apakah tempat tertentu sudah ada di wishlist pengguna
-   */
+  /** Idempotent: adding an already-saved placeId returns the existing item. */
+  addToWishlist(userId: string, item: WishlistAddInput): Promise<MutationResult<WishlistItem>>;
+  removeFromWishlist(userId: string, placeId: string): Promise<MutationResult<{ placeId: string }>>;
   isInWishlist(userId: string, placeId: string): Promise<boolean>;
-
-  /**
-   * Membersihkan cache lokal saat pengguna sign out
-   */
+  getSyncState(userId: string): Promise<SyncState>;
+  syncPending(userId: string): Promise<SyncState>;
   clearUserCache(userId: string): Promise<void>;
 }

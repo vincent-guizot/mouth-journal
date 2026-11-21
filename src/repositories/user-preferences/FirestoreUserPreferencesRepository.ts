@@ -1,132 +1,60 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db, isFirebaseConfigured } from '../../config/firebase';
-import {
-  AppSettings,
-  FoodPreferences,
-  DEFAULT_APP_SETTINGS,
-} from '../../models/preferences';
-import { AppSettingsSchema } from '../../schemas/preferencesSchema';
+import { AppSettings, DEFAULT_APP_SETTINGS, FoodPreferences } from '../../models/preferences';
+import { AppSettingsSchema, PreferencesPatch, PreferencesPatchSchema } from '../../schemas/preferencesSchema';
+import { OfflineDocument } from '../sync/OfflineDocument';
+import { MutationResult, RepositoryDeps } from '../sync/types';
 import { IUserPreferencesRepository } from './IUserPreferencesRepository';
 
-const getCacheKey = (userId: string) => `@mouthjournal_cache_${userId}_settings`;
+/** Pure merge used by the repository (exported for unit tests). */
+export const mergePreferencesPatch = (current: AppSettings, rawPatch: PreferencesPatch): AppSettings => {
+  const patch = PreferencesPatchSchema.parse(rawPatch);
+  const food: FoodPreferences = { ...current.foodPreferences };
+  if (patch.favoriteCategories !== undefined) food.favoriteCategories = patch.favoriteCategories;
+  if (patch.preferredVenueTypes !== undefined) food.preferredVenueTypes = patch.preferredVenueTypes;
+  if (patch.budgetPerVisit !== undefined) food.budgetPerVisit = patch.budgetPerVisit;
+  return AppSettingsSchema.parse({
+    ...current,
+    ...(patch.appearance !== undefined && { appearance: patch.appearance }),
+    ...(patch.searchRadiusKm !== undefined && { searchRadiusKm: patch.searchRadiusKm }),
+    ...(patch.useLocationForJournals !== undefined && { useLocationForJournals: patch.useLocationForJournals }),
+    foodPreferences: food,
+  });
+};
 
+/** /users/{uid}/preferences/settings */
 export class FirestoreUserPreferencesRepository implements IUserPreferencesRepository {
-  /**
-   * Mengambil AppSettings dari /users/{userId}/preferences/settings
-   */
-  async getSettings(userId: string): Promise<AppSettings> {
-    if (!userId) return DEFAULT_APP_SETTINGS;
+  private readonly store: OfflineDocument<AppSettings>;
 
-    // 1. Coba ambil dari Firestore
-    if (isFirebaseConfigured && db) {
-      try {
-        const prefRef = doc(db, 'users', userId, 'preferences', 'settings');
-        const docSnap = await getDoc(prefRef);
-        if (docSnap.exists()) {
-          const parsed = AppSettingsSchema.safeParse(docSnap.data());
-          if (parsed.success) {
-            await AsyncStorage.setItem(getCacheKey(userId), JSON.stringify(parsed.data));
-            return parsed.data;
-          }
-        }
-      } catch (err) {
-        console.warn(`[PreferencesRepository] Gagal membaca dari Firestore untuk user ${userId}:`, err);
-      }
-    }
-
-    // 2. Baca dari cache lokal
-    const cached = await AsyncStorage.getItem(getCacheKey(userId));
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        const validated = AppSettingsSchema.safeParse(parsed);
-        if (validated.success) return validated.data;
-      } catch {
-        return DEFAULT_APP_SETTINGS;
-      }
-    }
-
-    return DEFAULT_APP_SETTINGS;
-  }
-
-  /**
-   * Memperbarui AppSettings
-   */
-  async updateSettings(userId: string, updates: Partial<AppSettings>): Promise<AppSettings> {
-    if (!userId) throw new Error('User ID wajib diisi.');
-
-    const current = await this.getSettings(userId);
-    const merged: AppSettings = {
-      ...current,
-      ...updates,
-      foodPreferences: {
-        ...current.foodPreferences,
-        ...(updates.foodPreferences || {}),
-      },
-    };
-
-    const validated = AppSettingsSchema.parse(merged);
-
-    if (isFirebaseConfigured && db) {
-      const prefRef = doc(db, 'users', userId, 'preferences', 'settings');
-      await setDoc(prefRef, validated);
-    }
-
-    await AsyncStorage.setItem(getCacheKey(userId), JSON.stringify(validated));
-    return validated;
-  }
-
-  /**
-   * Memperbarui preferensi kuliner saja
-   */
-  async updateFoodPreferences(userId: string, preferences: Partial<FoodPreferences>): Promise<FoodPreferences> {
-    const current = await this.getSettings(userId);
-    const updatedFood = {
-      ...current.foodPreferences,
-      ...preferences,
-    };
-
-    const updatedSettings = await this.updateSettings(userId, {
-      foodPreferences: updatedFood,
+  constructor(deps: RepositoryDeps) {
+    this.store = new OfflineDocument<AppSettings>(deps, {
+      name: 'settings',
+      path: (uid) => ['users', uid, 'preferences', 'settings'],
+      schema: AppSettingsSchema,
     });
-
-    return updatedSettings.foodPreferences;
   }
 
-  async getPreferences(userId: string): Promise<any> {
-    const settings = await this.getSettings(userId);
-    return {
-      ...settings,
-      themeMode: settings.appearance,
-      favoriteCategories: settings.foodPreferences.favoriteCategories,
-    };
+  async getSettings(userId: string): Promise<AppSettings> {
+    return (await this.store.get(userId)) ?? DEFAULT_APP_SETTINGS;
   }
 
-  async updatePreferences(userId: string, updates: any): Promise<any> {
-    const patch: Partial<AppSettings> = {};
-    if (updates.themeMode) {
-      patch.appearance = updates.themeMode;
-    }
-    if (updates.appearance) {
-      patch.appearance = updates.appearance;
-    }
-    if (updates.searchRadiusKm !== undefined) {
-      patch.searchRadiusKm = updates.searchRadiusKm;
-    }
-    if (updates.favoriteCategories) {
-      return this.updateFoodPreferences(userId, {
-        favoriteCategories: updates.favoriteCategories,
-      });
-    }
-    return this.updateSettings(userId, patch);
+  async updatePreferences(userId: string, patch: PreferencesPatch): Promise<MutationResult<AppSettings>> {
+    this.store.assertUsable(userId);
+    const merged = mergePreferencesPatch(await this.getSettings(userId), patch);
+    const sync = await this.store.set(userId, merged);
+    return { data: merged, sync };
   }
 
-  /**
-   * Membersihkan cache saat logout
-   */
-  async clearUserCache(userId: string): Promise<void> {
-    if (!userId) return;
-    await AsyncStorage.removeItem(getCacheKey(userId));
+  async updateFoodPreferences(userId: string, preferences: Partial<FoodPreferences>): Promise<MutationResult<AppSettings>> {
+    this.store.assertUsable(userId);
+    const current = await this.getSettings(userId);
+    const merged = AppSettingsSchema.parse({
+      ...current,
+      foodPreferences: { ...current.foodPreferences, ...preferences },
+    });
+    const sync = await this.store.set(userId, merged);
+    return { data: merged, sync };
+  }
+
+  clearUserCache(userId: string): Promise<void> {
+    return this.store.clear(userId);
   }
 }

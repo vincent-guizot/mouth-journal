@@ -1,25 +1,15 @@
 import { AppSettings, FoodPreferences } from '../../models/preferences';
+import { PreferencesPatch } from '../../schemas/preferencesSchema';
+import { MutationResult } from '../sync/types';
 
 export interface IUserPreferencesRepository {
-  /**
-   * Mengambil pengaturan aplikasi dan preferensi kuliner pengguna
-   */
+  /** Stored settings, or DEFAULT_APP_SETTINGS when the user never saved any. */
   getSettings(userId: string): Promise<AppSettings>;
-  getPreferences?(userId: string): Promise<any>;
-
   /**
-   * Memperbarui pengaturan aplikasi
+   * Merge a validated patch into the current settings in ONE write. Any combination
+   * of appearance / radius / categories / venue types is preserved.
    */
-  updateSettings(userId: string, updates: Partial<AppSettings>): Promise<AppSettings>;
-  updatePreferences?(userId: string, updates: any): Promise<any>;
-
-  /**
-   * Memperbarui preferensi kuliner spesifik
-   */
-  updateFoodPreferences(userId: string, preferences: Partial<FoodPreferences>): Promise<FoodPreferences>;
-
-  /**
-   * Membersihkan cache saat logout
-   */
+  updatePreferences(userId: string, patch: PreferencesPatch): Promise<MutationResult<AppSettings>>;
+  updateFoodPreferences(userId: string, preferences: Partial<FoodPreferences>): Promise<MutationResult<AppSettings>>;
   clearUserCache(userId: string): Promise<void>;
 }

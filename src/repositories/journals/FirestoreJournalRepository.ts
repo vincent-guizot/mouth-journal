@@ -1,173 +1,108 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  collection,
-  doc,
-  getDocs,
-  getDoc,
-  setDoc,
-  deleteDoc,
-  query,
-  orderBy,
-  updateDoc,
-} from 'firebase/firestore';
-import { db, isFirebaseConfigured } from '../../config/firebase';
-import { Journal } from '../../models/journal';
-import { JournalSchema } from '../../schemas/journalSchema';
+import { Journal, JournalDraft } from '../../models/journal';
+import { computeOverallRating, journalSchemaFor } from '../../schemas/journalSchema';
+import { generateId } from '../../utils/ids';
+import { OfflineCollection } from '../sync/OfflineCollection';
+import { MutationResult, RepositoryDeps, SyncState } from '../sync/types';
 import { IJournalRepository } from './IJournalRepository';
 
-const getCacheKey = (userId: string) => `@mouthjournal_cache_${userId}_journals`;
+export class JournalNotFoundError extends Error {
+  readonly code = 'app/journal-not-found';
+  constructor(journalId: string) {
+    super(`Jurnal ${journalId} tidak ditemukan.`);
+    this.name = 'JournalNotFoundError';
+  }
+}
 
+/** Fields that the caller may never set or change. */
+const stripOwnedFields = <T extends object>(input: T) => {
+  const { id: _id, userId: _u, createdAt: _c, updatedAt: _up, ...rest } = input as T & Partial<Journal>;
+  return rest;
+};
+
+/**
+ * Journals live at /users/{uid}/journals/{journalId}. Offline-first via
+ * OfflineCollection (cache → queue → Firestore).
+ */
 export class FirestoreJournalRepository implements IJournalRepository {
-  /**
-   * Mengambil semua jurnal milik userId dari /users/{userId}/journals
-   */
-  async getJournals(userId: string): Promise<Journal[]> {
-    if (!userId) throw new Error('User ID diperlukan untuk mengambil jurnal.');
+  private readonly store: OfflineCollection<Journal>;
 
-    // 1. Coba ambil dari Firestore jika terkonfigurasi
-    if (isFirebaseConfigured && db) {
-      try {
-        const journalsRef = collection(db, 'users', userId, 'journals');
-        const q = query(journalsRef, orderBy('createdAt', 'desc'));
-        const snapshot = await getDocs(q);
-
-        const remoteJournals: Journal[] = [];
-        snapshot.forEach((docSnap) => {
-          const data = { id: docSnap.id, ...docSnap.data() };
-          const parsed = JournalSchema.safeParse(data);
-          if (parsed.success) {
-            remoteJournals.push(parsed.data);
-          }
-        });
-
-        // Simpan ke cache lokal terisolasi khusus userId ini
-        await AsyncStorage.setItem(getCacheKey(userId), JSON.stringify(remoteJournals));
-        return remoteJournals;
-      } catch (err) {
-        console.warn(`[JournalRepository] Gagal mengambil dari Firestore untuk user ${userId}, membaca cache:`, err);
-      }
-    }
-
-    // 2. Baca dari cache lokal terisolasi
-    const cached = await AsyncStorage.getItem(getCacheKey(userId));
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed)) return parsed;
-      } catch {
-        return [];
-      }
-    }
-
-    return [];
+  constructor(private readonly deps: RepositoryDeps) {
+    this.store = new OfflineCollection<Journal>(deps, {
+      name: 'journals',
+      path: (uid) => ['users', uid, 'journals'],
+      // Device-local photo URIs are only legal in explicit demo mode.
+      schema: journalSchemaFor(deps.mode === 'demo'),
+      orderByField: 'createdAt',
+    });
   }
 
-  /**
-   * Mengambil satu jurnal berdasarkan ID
-   */
-  async getJournalById(userId: string, journalId: string): Promise<Journal | null> {
-    if (!userId || !journalId) return null;
-
-    if (isFirebaseConfigured && db) {
-      try {
-        const journalRef = doc(db, 'users', userId, 'journals', journalId);
-        const docSnap = await getDoc(journalRef);
-        if (docSnap.exists()) {
-          const parsed = JournalSchema.safeParse({ id: docSnap.id, ...docSnap.data() });
-          if (parsed.success) return parsed.data;
-        }
-      } catch (err) {
-        console.warn(`[JournalRepository] Gagal getDoc Firestore ${journalId}:`, err);
-      }
-    }
-
-    // Fallback baca dari cache lokal
-    const all = await this.getJournals(userId);
-    return all.find((j) => j.id === journalId) || null;
+  private get schema() {
+    return journalSchemaFor(this.deps.mode === 'demo');
   }
 
-  /**
-   * Membuat jurnal baru di subkoleksi privat /users/{userId}/journals/{newId}
-   */
-  async createJournal(userId: string, journalInput: Omit<Journal, 'id'>): Promise<Journal> {
-    if (!userId) throw new Error('User ID wajib untuk membuat jurnal.');
+  getJournals(userId: string): Promise<Journal[]> {
+    return this.store.list(userId);
+  }
 
-    const newId = `journal_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const fullJournal: Journal = {
-      ...journalInput,
-      id: newId,
+  getJournalById(userId: string, journalId: string): Promise<Journal | null> {
+    return this.store.get(userId, journalId);
+  }
+
+  async createJournal(userId: string, draft: JournalDraft): Promise<MutationResult<Journal>> {
+    this.store.assertUsable(userId);
+    const now = this.store.now().toISOString();
+    const journal = this.schema.parse({
+      ...stripOwnedFields(draft),
+      overallRating: computeOverallRating(draft.criteriaRating),
+      id: generateId(),
       userId,
-      createdAt: journalInput.createdAt || new Date().toISOString(),
-    };
-
-    // Validasi skema
-    const validated = JournalSchema.parse(fullJournal);
-
-    if (isFirebaseConfigured && db) {
-      const journalRef = doc(db, 'users', userId, 'journals', newId);
-      await setDoc(journalRef, validated);
-    }
-
-    // Perbarui cache lokal user ini
-    const existing = await this.getJournals(userId);
-    const updated = [validated, ...existing.filter((j) => j.id !== newId)];
-    await AsyncStorage.setItem(getCacheKey(userId), JSON.stringify(updated));
-
-    return validated;
+      createdAt: now,
+    });
+    const sync = await this.store.mutate(userId, { kind: 'upsert', data: journal });
+    return { data: journal, sync };
   }
 
-  /**
-   * Memperbarui jurnal yang ada
-   */
-  async updateJournal(userId: string, journalId: string, updates: Partial<Journal>): Promise<Journal> {
-    if (!userId || !journalId) throw new Error('User ID dan Journal ID diperlukan.');
-
-    const existing = await this.getJournalById(userId, journalId);
-    if (!existing) throw new Error(`Jurnal ${journalId} tidak ditemukan.`);
-
-    const merged: Journal = {
-      ...existing,
-      ...updates,
-      id: journalId,
-      userId,
-      updatedAt: new Date().toISOString(),
-    };
-
-    const validated = JournalSchema.parse(merged);
-
-    if (isFirebaseConfigured && db) {
-      const journalRef = doc(db, 'users', userId, 'journals', journalId);
-      await updateDoc(journalRef, validated as any);
-    }
-
-    const all = await this.getJournals(userId);
-    const updatedList = all.map((j) => (j.id === journalId ? validated : j));
-    await AsyncStorage.setItem(getCacheKey(userId), JSON.stringify(updatedList));
-
-    return validated;
+  async updateJournal(
+    userId: string,
+    journalId: string,
+    updates: Partial<JournalDraft>
+  ): Promise<MutationResult<Journal>> {
+    this.store.assertUsable(userId);
+    const existing = await this.store.get(userId, journalId);
+    if (!existing) throw new JournalNotFoundError(journalId);
+    const merged = { ...existing, ...stripOwnedFields(updates) };
+    const journal = this.schema.parse({
+      ...merged,
+      overallRating: computeOverallRating(merged.criteriaRating),
+      id: existing.id,
+      userId: existing.userId,
+      createdAt: existing.createdAt,
+      updatedAt: this.store.now().toISOString(),
+    });
+    const sync = await this.store.mutate(userId, { kind: 'upsert', data: journal });
+    return { data: journal, sync };
   }
 
-  /**
-   * Menghapus jurnal
-   */
-  async deleteJournal(userId: string, journalId: string): Promise<void> {
-    if (!userId || !journalId) return;
-
-    if (isFirebaseConfigured && db) {
-      const journalRef = doc(db, 'users', userId, 'journals', journalId);
-      await deleteDoc(journalRef);
-    }
-
-    const all = await this.getJournals(userId);
-    const filtered = all.filter((j) => j.id !== journalId);
-    await AsyncStorage.setItem(getCacheKey(userId), JSON.stringify(filtered));
+  async deleteJournal(userId: string, journalId: string): Promise<MutationResult<{ id: string }>> {
+    this.store.assertUsable(userId);
+    if (!journalId) throw new Error('Journal ID wajib diisi.');
+    const sync = await this.store.mutate(userId, { kind: 'delete', docId: journalId });
+    return { data: { id: journalId }, sync };
   }
 
-  /**
-   * Membersihkan seluruh cache lokal milik user ini saat sign out
-   */
-  async clearUserCache(userId: string): Promise<void> {
-    if (!userId) return;
-    await AsyncStorage.removeItem(getCacheKey(userId));
+  getSyncState(userId: string): Promise<SyncState> {
+    return this.store.getSyncState(userId);
+  }
+
+  syncPending(userId: string): Promise<SyncState> {
+    return this.store.flush(userId);
+  }
+
+  retryFailed(userId: string): Promise<SyncState> {
+    return this.store.retryFailed(userId);
+  }
+
+  clearUserCache(userId: string): Promise<void> {
+    return this.store.clear(userId);
   }
 }

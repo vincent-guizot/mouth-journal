@@ -2,70 +2,180 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
+    // ------------------------------------------------------------ helpers
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return request.auth != null && request.auth.uid == userId;
     }
 
-    // 1. User Profile Document: /users/{userId}
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function isIsoDate(v) {
+      return v is string
+        && v.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([.][0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$');
+    }
+
+    function isShortString(v, min, max) {
+      return v is string && v.size() >= min && v.size() <= max;
+    }
+
+    function isSafeId(v) {
+      return v is string && v.matches('^[A-Za-z0-9_.:-]{1,128}$');
+    }
+
+    function isStar(v) {
+      return v is int && v >= 1 && v <= 5;
+    }
+
+    function isLat(v) {
+      return v is number && v >= -90 && v <= 90;
+    }
+
+    function isLng(v) {
+      return v is number && v >= -180 && v <= 180;
+    }
+
+    function isMainCategory(v) {
+      return v in ['food', 'drinks', 'wisata'];
+    }
+
+    // Absent optional fields are allowed; present ones must have the right type.
+    function optString(data, key, max) {
+      return !(key in data) || isShortString(data[key], 0, max);
+    }
+
+    // ------------------------------------------------------------ profile
+    function validProfile(userId) {
+      let d = incoming();
+      return d.keys().hasAll(['uid', 'email', 'displayName'])
+        && d.keys().hasOnly(['uid', 'email', 'displayName', 'username', 'phoneNumber', 'bio', 'photoURL',
+          'bannerURL', 'culinaryPreferences', 'favoriteVenueTypes', 'budgetPerVisit', 'favoriteLocations',
+          'socialInstagram', 'socialTikTok', 'createdAt', 'updatedAt'])
+        && d.uid == userId
+        && d.email is string
+        && d.email == request.auth.token.email
+        && isShortString(d.displayName, 1, 80)
+        && (!('username' in d) || (d.username is string && d.username.matches('^[a-z0-9._]{3,30}$')))
+        && optString(d, 'bio', 300)
+        && optString(d, 'phoneNumber', 30)
+        && (!('photoURL' in d) || (d.photoURL is string && d.photoURL.matches('^https://.+')))
+        && (!('bannerURL' in d) || (d.bannerURL is string && d.bannerURL.matches('^https://.+')))
+        && (!('createdAt' in d) || isIsoDate(d.createdAt))
+        && (!('updatedAt' in d) || isIsoDate(d.updatedAt));
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId)
-        && request.resource.data.uid == userId
-        && request.resource.data.email is string
-        && request.resource.data.displayName is string;
+      allow create: if isOwner(userId) && validProfile(userId);
+      allow update: if isOwner(userId) && validProfile(userId)
+        && (!('createdAt' in resource.data) || incoming().createdAt == resource.data.createdAt);
       allow delete: if isOwner(userId);
 
-      // 2. Private Journals Subcollection: /users/{userId}/journals/{journalId}
+      // ---------------------------------------------------------- journals
+      function validJournal(journalId) {
+        let d = incoming();
+        let c = d.criteriaRating;
+        return d.keys().hasAll(['id', 'userId', 'placeId', 'placeName', 'placeAddress', 'mainCategory',
+            'subCategory', 'subCategoryLabel', 'latitude', 'longitude', 'photoUrls', 'overallRating',
+            'criteriaRating', 'menuItems', 'totalSpent', 'reviewText', 'tags', 'visitedAt', 'createdAt'])
+          && d.keys().hasOnly(['id', 'userId', 'userName', 'placeId', 'placeName', 'placeAddress', 'mainCategory',
+            'subCategory', 'subCategoryLabel', 'latitude', 'longitude', 'photoUrls', 'overallRating',
+            'criteriaRating', 'menuItems', 'totalSpent', 'reviewText', 'tags', 'visitedAt', 'createdAt', 'updatedAt'])
+          && d.id == journalId
+          && d.userId == userId
+          && isSafeId(d.placeId)
+          && isShortString(d.placeName, 1, 200)
+          && isShortString(d.placeAddress, 0, 300)
+          && isMainCategory(d.mainCategory)
+          && isShortString(d.subCategory, 1, 60)
+          && isShortString(d.subCategoryLabel, 1, 60)
+          && ((d.latitude == null && d.longitude == null) || (isLat(d.latitude) && isLng(d.longitude)))
+          && d.photoUrls is list && d.photoUrls.size() <= 10
+          && (d.photoUrls.size() == 0 || (d.photoUrls[0] is string && d.photoUrls[0].matches('^https://.+')))
+          && c is map
+          && c.keys().hasOnly(['taste', 'ambiance', 'service', 'price'])
+          // `service` is a reserved word in the rules language, hence bracket access.
+          && isStar(c['taste']) && isStar(c['ambiance']) && isStar(c['service']) && isStar(c['price'])
+          && d.overallRating is number
+          && d.overallRating == math.round((c['taste'] + c['ambiance'] + c['service'] + c['price']) * 10.0 / 4.0) / 10.0
+          && d.menuItems is list && d.menuItems.size() <= 50
+          && d.totalSpent is int && d.totalSpent >= 0
+          && isShortString(d.reviewText, 0, 1000)
+          && d.tags is list && d.tags.size() <= 20
+          && isIsoDate(d.visitedAt)
+          && isIsoDate(d.createdAt)
+          && (!('updatedAt' in d) || isIsoDate(d.updatedAt))
+          && optString(d, 'userName', 120);
+      }
+
       match /journals/{journalId} {
         allow read: if isOwner(userId);
-        
-        allow create: if isOwner(userId)
-          && request.resource.data.userId == userId
-          && request.resource.data.placeName is string
-          && request.resource.data.placeName.size() > 0
-          && request.resource.data.mainCategory in ['food', 'drinks', 'wisata']
-          && request.resource.data.overallRating is number
-          && request.resource.data.overallRating >= 0
-          && request.resource.data.overallRating <= 5
-          && request.resource.data.createdAt is string;
-
-        allow update: if isOwner(userId)
-          && request.resource.data.userId == userId
-          && request.resource.data.overallRating is number
-          && request.resource.data.overallRating >= 0
-          && request.resource.data.overallRating <= 5;
-
+        allow create: if isOwner(userId) && validJournal(journalId) && !('updatedAt' in incoming());
+        // Second branch: idempotent re-delivery of an already-applied write (the
+        // offline queue may resend a create the SDK already delivered on reconnect).
+        allow update: if isOwner(userId) && validJournal(journalId)
+          && incoming().createdAt == resource.data.createdAt
+          && incoming().userId == resource.data.userId
+          && (('updatedAt' in incoming() && isIsoDate(incoming().updatedAt)) || incoming() == resource.data);
         allow delete: if isOwner(userId);
       }
 
-      // 3. Private Wishlist Subcollection: /users/{userId}/wishlist/{itemId}
+      // ---------------------------------------------------------- wishlist
+      function validWishlist(itemId) {
+        let d = incoming();
+        return d.keys().hasAll(['id', 'userId', 'placeId', 'placeName', 'placeAddress', 'mainCategory',
+            'subCategory', 'subCategoryLabel', 'latitude', 'longitude', 'createdAt'])
+          && d.keys().hasOnly(['id', 'userId', 'placeId', 'placeName', 'placeAddress', 'mainCategory',
+            'subCategory', 'subCategoryLabel', 'latitude', 'longitude', 'photoUrl', 'personalNotes', 'createdAt'])
+          && d.id == itemId
+          && d.placeId == itemId
+          && isSafeId(itemId)
+          && d.userId == userId
+          && isShortString(d.placeName, 1, 200)
+          && isShortString(d.placeAddress, 0, 300)
+          && isMainCategory(d.mainCategory)
+          && isShortString(d.subCategory, 1, 60)
+          && isShortString(d.subCategoryLabel, 1, 60)
+          && isLat(d.latitude) && isLng(d.longitude)
+          && (!('photoUrl' in d) || (d.photoUrl is string && d.photoUrl.matches('^https://.+')))
+          && optString(d, 'personalNotes', 500)
+          && isIsoDate(d.createdAt);
+      }
+
       match /wishlist/{itemId} {
         allow read: if isOwner(userId);
-        
-        allow create: if isOwner(userId)
-          && request.resource.data.userId == userId
-          && request.resource.data.placeName is string
-          && request.resource.data.placeName.size() > 0
-          && request.resource.data.mainCategory in ['food', 'drinks', 'wisata'];
-
-        allow update: if isOwner(userId)
-          && request.resource.data.userId == userId;
-
+        allow create: if isOwner(userId) && validWishlist(itemId);
+        allow update: if isOwner(userId) && validWishlist(itemId)
+          && incoming().createdAt == resource.data.createdAt;
         allow delete: if isOwner(userId);
       }
 
-      // 4. Private User Preferences: /users/{userId}/preferences/{docId}
+      // ---------------------------------------------------------- preferences
+      function validSettings() {
+        let d = incoming();
+        let f = d.foodPreferences;
+        return d.keys().hasAll(['appearance', 'searchRadiusKm', 'foodPreferences'])
+          && d.keys().hasOnly(['appearance', 'locationPermissionsGranted', 'searchRadiusKm', 'useLocationForJournals',
+            'distanceUnit', 'foodPreferences', 'lastBackupDate', 'appVersion'])
+          && d.appearance in ['light', 'dark', 'system']
+          && d.searchRadiusKm is number && d.searchRadiusKm >= 1 && d.searchRadiusKm <= 20
+          && (!('distanceUnit' in d) || d.distanceUnit == 'km')
+          && f is map
+          && f.keys().hasOnly(['favoriteCategories', 'preferredVenueTypes', 'budgetPerVisit', 'defaultExploreFilters',
+            'recommendationPreferences'])
+          && f.favoriteCategories is list && f.favoriteCategories.size() <= 30
+          && f.preferredVenueTypes is list && f.preferredVenueTypes.size() <= 30;
+      }
+
       match /preferences/{docId} {
-        allow read, write: if isOwner(userId);
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && docId == 'settings' && validSettings();
+        allow delete: if isOwner(userId);
       }
     }
 
-    // Blokir seluruh akses ke root collection atau path lain yang tidak terdefinisi
+    // Everything else is denied.
     match /{document=**} {
       allow read, write: if false;
     }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { MAP_PIN_THEME, getPinStyleForCategory } from '../../config/mapPinTheme';
+import { getPinStyleForCategory } from '../../config/mapPinTheme';
 
 interface MapPinBadgeProps {
   category: 'food' | 'drinks' | 'wisata' | string;

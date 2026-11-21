@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  Dimensions,
 } from 'react-native';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
 import { theme } from '../config/theme';
@@ -27,13 +26,7 @@ import {
   X,
   Check,
   MapPin,
-  Sparkles,
-  SlidersHorizontal,
-  Bookmark,
-  Coffee,
 } from 'lucide-react-native';
-
-const { width } = Dimensions.get('window');
 
 interface EditProfileScreenProps {
   user: UserProfile;

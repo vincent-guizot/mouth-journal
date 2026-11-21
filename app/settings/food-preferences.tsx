@@ -7,7 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Check, Coffee, Utensils, Cake, Wine } from 'lucide-react-native';
+import { ArrowLeft, Check } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/AuthContext';
 import { usePreferences } from '../../src/features/settings/usePreferences';

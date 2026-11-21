@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MapPin, Map as MapIcon, List as ListIcon, RefreshCw } from 'lucide-react-native';
-import { theme } from '../../../config/theme';
 import { UserLocation } from '../../../types/places';
 
 interface ExploreHeaderProps {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Path, G, Defs, LinearGradient, Stop, Circle } from 'react-native-svg';
+import Svg, { Path, G, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { theme } from '../config/theme';
 
 interface MouthJournalLogoProps {

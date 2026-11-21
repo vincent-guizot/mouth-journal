@@ -1,10 +1,9 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, ActivityIndicator, TouchableOpacity, ViewStyle, DimensionValue } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, ViewStyle, DimensionValue } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { UserLocation } from '../../types/places';
-import { MAP_PIN_THEME, getPinStyleForCategory } from '../../config/mapPinTheme';
+import { MAP_PIN_THEME } from '../../config/mapPinTheme';
 import { theme } from '../../config/theme';
-import { Navigation, Plus, Minus } from 'lucide-react-native';
 
 export interface MapMarkerItem {
   id: string;

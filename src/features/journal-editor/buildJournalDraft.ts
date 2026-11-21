@@ -1,6 +1,5 @@
-import { JournalDraft } from '../../models/journal';
+import { Journal, JournalDraft } from '../../models/journal';
 import { NearbyPlace } from '../../models/place';
-import { Journal } from '../../models/journal';
 import { computeOverallRating } from '../../schemas/journalSchema';
 import { generateId } from '../../utils/ids';
 import { JOURNAL_CATEGORY_DEFS } from './constants/categoryDefs';
@@ -86,6 +85,7 @@ export interface JournalFormValues {
   menuItems: MenuItemRow[];
   /** Must already be uploaded (https) unless in demo mode. */
   photoUrls: string[];
+  pendingPhotoUris?: string[];
   reviewText: string;
   visitedAt: Date;
   userName?: string;
@@ -135,6 +135,7 @@ export const buildJournalDraft = (v: JournalFormValues): JournalDraft => {
     latitude: v.place.latitude,
     longitude: v.place.longitude,
     photoUrls: v.photoUrls,
+    pendingPhotoUris: v.pendingPhotoUris && v.pendingPhotoUris.length > 0 ? v.pendingPhotoUris : undefined,
     criteriaRating,
     overallRating: computeOverallRating(criteriaRating),
     menuItems: v.menuItems.map((m) => ({

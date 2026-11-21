@@ -57,7 +57,7 @@ export const AutoRecommendedCarousel: React.FC<AutoRecommendedCarouselProps> = (
             { id: 'food', label: '🍽️ Food' },
             { id: 'drinks', label: '☕ Drinks' },
             { id: 'wisata', label: '🎡 Wisata' },
-          ] as Array<{ id: MainCategory; label: string }>
+          ] as { id: MainCategory; label: string }[]
         ).map((item) => {
           const isSelected = filter === item.id;
           return (

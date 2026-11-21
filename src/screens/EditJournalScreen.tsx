@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  Dimensions,
 } from 'react-native';
 import { theme } from '../config/theme';
 import { DiaryEntry } from '../types/diary';
@@ -33,8 +32,6 @@ import {
   Lock,
 } from 'lucide-react-native';
 
-const { width } = Dimensions.get('window');
-
 interface EditJournalScreenProps {
   journal?: DiaryEntry | null;
   onBack: () => void;
@@ -58,14 +55,14 @@ export const EditJournalScreen: React.FC<EditJournalScreenProps> = ({
   ]);
 
   // Basic Info
-  const [placeName, setPlaceName] = useState(
+  const [placeName] = useState(
     journal?.placeName || 'Zona Nyaman Coffee'
   );
-  const [placeAddress, setPlaceAddress] = useState(
+  const [placeAddress] = useState(
     journal?.placeAddress || 'Kemanggisan, Jakarta Barat'
   );
-  const [visitDate, setVisitDate] = useState('12 Okt 2026');
-  const [visitTime, setVisitTime] = useState('10:30');
+  const [visitDate] = useState('12 Okt 2026');
+  const [visitTime] = useState('10:30');
 
   // Title, Category, Rating
   const [title, setTitle] = useState(

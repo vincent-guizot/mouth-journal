@@ -6,15 +6,11 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
-  ScrollView,
 } from 'react-native';
 import { theme } from '../config/theme';
 import { OnboardingMasterAssets } from '../config/assets';
 import {
   ChevronRight,
-  MapPin,
-  Calendar,
-  Clock,
   Bookmark,
   Star,
   Heart,

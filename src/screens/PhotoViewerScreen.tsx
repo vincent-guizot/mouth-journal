@@ -23,15 +23,10 @@ import {
   MapPin,
   Calendar,
   Clock,
-  Users,
-  Heart,
-  Bookmark,
   Pencil,
   Trash,
   Star,
-  Plus,
   Share2,
-  Download,
   Info,
 } from 'lucide-react-native';
 

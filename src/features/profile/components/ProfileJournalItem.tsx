@@ -1,8 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { Star, MapPin, ChevronRight } from 'lucide-react-native';
+import { Star, MapPin } from 'lucide-react-native';
 import { DiaryEntry } from '../../../types/diary';
-import { theme } from '../../../config/theme';
 
 interface ProfileJournalItemProps {
   journal: DiaryEntry;

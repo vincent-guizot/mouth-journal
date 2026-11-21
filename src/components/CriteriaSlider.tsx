@@ -15,12 +15,12 @@ export const CriteriaSlider: React.FC<CriteriaSliderProps> = ({
   onChange,
   readOnly = false,
 }) => {
-  const criteriaList: Array<{
+  const criteriaList: {
     key: keyof CriteriaRating;
     label: string;
     icon: any;
     color: string;
-  }> = [
+  }[] = [
     { key: 'taste', label: 'Rasa Makanan/Minuman', icon: Utensils, color: '#E05A47' },
     { key: 'ambiance', label: 'Suasana & Tempat', icon: Sparkles, color: '#D97706' },
     { key: 'service', label: 'Pelayanan (Service)', icon: UserCheck, color: '#2563EB' },

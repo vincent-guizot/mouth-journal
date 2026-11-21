@@ -11,20 +11,22 @@ import { ArrowLeft, Sun, Moon, Smartphone, Check } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/AuthContext';
 import { usePreferences } from '../../src/features/settings/usePreferences';
+import { useTheme, AppearanceMode } from '../../src/context/ThemeContext';
 import { theme } from '../../src/config/theme';
-
-type AppearanceMode = 'light' | 'dark' | 'system';
 
 export default function AppearanceSettingsRoute() {
   const router = useRouter();
   const { currentUser } = useAuth();
   const { settings, update } = usePreferences(currentUser?.uid);
-  const mode: AppearanceMode = settings?.appearance ?? 'light';
-  // Only the light theme is implemented in the UI; dark/system are shown disabled
-  // instead of pretending to switch the theme.
+  const { mode: themeMode, setMode: setThemeMode, theme: currentTheme } = useTheme();
+
+  const mode: AppearanceMode = (settings?.appearance ?? themeMode) as AppearanceMode;
+
   const handleSelectMode = (selected: AppearanceMode) => {
-    if (selected !== 'light') return;
-    update({ appearance: selected });
+    setThemeMode(selected);
+    if (currentUser?.uid) {
+      update({ appearance: selected });
+    }
   };
 
   const THEMES: { id: AppearanceMode; title: string; subtitle: string; icon: typeof Sun; available: boolean }[] = [
@@ -40,33 +42,33 @@ export default function AppearanceSettingsRoute() {
       title: 'Dark Mode (Espresso Night)',
       subtitle: 'Kenyamanan mata untuk pencatatan malam hari.',
       icon: Moon,
-      available: false,
+      available: true,
     },
     {
       id: 'system',
       title: 'Sesuai Sistem',
       subtitle: 'Mengikuti pengaturan tema perangkat Anda secara otomatis.',
       icon: Smartphone,
-      available: false,
+      available: true,
     },
   ];
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: currentTheme.colors.background }]}>
+      <View style={[styles.header, { backgroundColor: currentTheme.colors.surface, borderBottomColor: currentTheme.colors.border }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
           activeOpacity={0.7}
         >
-          <ArrowLeft size={22} color={theme.colors.coffeeBrown} />
+          <ArrowLeft size={22} color={currentTheme.colors.coffeeBrown} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Appearance</Text>
+        <Text style={[styles.headerTitle, { color: currentTheme.colors.coffeeBrown }]}>Appearance</Text>
         <View style={{ width: 36 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.sectionTitle}>Pilih Tema Tampilan</Text>
+        <Text style={[styles.sectionTitle, { color: currentTheme.colors.textTertiary }]}>Pilih Tema Tampilan</Text>
         <View style={styles.list}>
           {THEMES.map((item) => {
             const Icon = item.icon;
@@ -74,23 +76,28 @@ export default function AppearanceSettingsRoute() {
             return (
               <TouchableOpacity
                 key={item.id}
-                style={[styles.themeCard, isSelected && styles.themeCardSelected, !item.available && { opacity: 0.45 }]}
-                disabled={!item.available}
+                style={[
+                  styles.themeCard,
+                  {
+                    backgroundColor: currentTheme.colors.surface,
+                    borderColor: isSelected ? currentTheme.colors.terracotta : currentTheme.colors.border,
+                  },
+                ]}
                 onPress={() => handleSelectMode(item.id)}
                 activeOpacity={0.85}
               >
-                <View style={styles.iconCircle}>
+                <View style={[styles.iconCircle, { backgroundColor: currentTheme.colors.surfaceSubtle }]}>
                   <Icon
                     size={22}
-                    color={isSelected ? theme.colors.terracotta : theme.colors.coffeeBrown}
+                    color={isSelected ? currentTheme.colors.terracotta : currentTheme.colors.coffeeBrown}
                   />
                 </View>
                 <View style={styles.info}>
-                  <Text style={styles.title}>{item.title}</Text>
-                  <Text style={styles.subtitle}>{item.available ? item.subtitle : 'Belum tersedia di versi ini.'}</Text>
+                  <Text style={[styles.title, { color: currentTheme.colors.coffeeBrown }]}>{item.title}</Text>
+                  <Text style={[styles.subtitle, { color: currentTheme.colors.textSecondary }]}>{item.subtitle}</Text>
                 </View>
                 {isSelected && (
-                  <View style={styles.checkCircle}>
+                  <View style={[styles.checkCircle, { backgroundColor: currentTheme.colors.terracotta }]}>
                     <Check size={16} color="#FFFFFF" strokeWidth={3} />
                   </View>
                 )}

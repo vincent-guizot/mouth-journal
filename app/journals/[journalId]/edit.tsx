@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AddLogScreen } from '../../../src/screens/AddLogScreen';
 import { useAuth } from '../../../src/context/AuthContext';
@@ -8,6 +8,7 @@ import { useJournalRecord } from '../../../src/features/diary/hooks/useJournalRe
 import { NotFoundState } from '../../../src/components/feedback/NotFoundState';
 import { parseIdParam, parseJournalInitialData } from '../../../src/navigation/routeParams';
 import { theme } from '../../../src/config/theme';
+import { feedback } from '../../../src/components/feedback';
 
 export default function JournalEditRoute() {
   const router = useRouter();
@@ -50,7 +51,9 @@ export default function JournalEditRoute() {
         onSuccess={() => router.replace('/(tabs)/diary')}
         onDelete={async () => {
           const { sync } = await journalRepository.deleteJournal(currentUser.uid, journal.id);
-          if (sync === 'pending') Alert.alert('Jurnal Dihapus', 'Dihapus di perangkat; akan disinkronkan saat online.');
+          if (sync === 'pending') {
+            feedback.showToast('Dihapus di perangkat; akan disinkronkan saat online.', 'info');
+          }
           router.replace('/(tabs)/diary');
         }}
       />

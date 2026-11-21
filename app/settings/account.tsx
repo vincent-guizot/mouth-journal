@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   TextInput,
   ActivityIndicator,
 } from 'react-native';
@@ -15,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/AuthContext';
 import { theme } from '../../src/config/theme';
 import { useLogout } from '../../src/features/auth/useLogout';
+import { feedback } from '../../src/components/feedback';
 
 export default function AccountSettingsRoute() {
   const router = useRouter();
@@ -26,10 +26,14 @@ export default function AccountSettingsRoute() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleLogout = () => {
-    Alert.alert('Keluar', 'Apakah Anda yakin ingin keluar dari akun ini?', [
-      { text: 'Batal', style: 'cancel' },
-      { text: 'Keluar', style: 'destructive', onPress: logout },
-    ]);
+    feedback.showConfirm({
+      title: 'Keluar',
+      message: 'Apakah Anda yakin ingin keluar dari akun ini?',
+      cancelText: 'Batal',
+      confirmText: 'Keluar',
+      destructive: true,
+      onConfirm: logout,
+    });
   };
 
   const handleSendReset = async () => {
@@ -37,9 +41,9 @@ export default function AccountSettingsRoute() {
     setIsSendingReset(true);
     try {
       await sendPasswordReset(currentUser.email);
-      Alert.alert('Email Terkirim', `Link ubah password dikirim ke ${currentUser.email}.`);
+      feedback.showAlert('Email Terkirim', `Link ubah password dikirim ke ${currentUser.email}.`);
     } catch (err) {
-      Alert.alert('Gagal Mengirim', err instanceof Error ? err.message : String(err));
+      feedback.showAlert('Gagal Mengirim', err instanceof Error ? err.message : String(err));
     } finally {
       setIsSendingReset(false);
     }
@@ -47,14 +51,14 @@ export default function AccountSettingsRoute() {
 
   const confirmDelete = async () => {
     if (appMode === 'firebase' && !deletePassword) {
-      Alert.alert('Password Diperlukan', 'Masukkan password Anda untuk mengonfirmasi penghapusan akun.');
+      feedback.showAlert('Password Diperlukan', 'Masukkan password Anda untuk mengonfirmasi penghapusan akun.');
       return;
     }
     setIsDeleting(true);
     try {
       const report = await deleteAccount(deletePassword);
       setDeleteOpen(false);
-      Alert.alert(
+      feedback.showAlert(
         'Akun Dihapus',
         appMode === 'firebase'
           ? `${report.firestoreDocumentsDeleted} dokumen dan ${report.storageFilesDeleted} foto telah dihapus permanen.`
@@ -62,7 +66,7 @@ export default function AccountSettingsRoute() {
       );
       router.replace('/(auth)/welcome');
     } catch (err) {
-      Alert.alert('Gagal Menghapus Akun', err instanceof Error ? err.message : String(err));
+      feedback.showAlert('Gagal Menghapus Akun', err instanceof Error ? err.message : String(err));
     } finally {
       setIsDeleting(false);
       setDeletePassword('');

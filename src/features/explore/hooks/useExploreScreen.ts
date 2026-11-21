@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Alert } from 'react-native';
 import { NearbyPlace, UserLocation } from '../../../types/places';
 import { placesService, PlacesProviderError } from '../../../services/places/placesService';
 import { userPreferencesRepository, wishlistRepository } from '../../../repositories';
 import { ExploreCategory } from '../components/ExploreCategoryPills';
+import { feedback } from '../../../components/feedback';
 
 export interface UseExploreScreenProps {
   userLocation: UserLocation;
@@ -108,10 +108,10 @@ export function useExploreScreen({ userLocation, userId }: UseExploreScreenProps
         return next;
       });
       if (sync === 'pending') {
-        Alert.alert('Wishlist', 'Tersimpan di perangkat; akan disinkronkan saat online.');
+        feedback.showToast('Tersimpan di perangkat; akan disinkronkan saat online.', 'info');
       }
     } catch (err) {
-      Alert.alert('Wishlist Gagal Diperbarui', err instanceof Error ? err.message : String(err));
+      feedback.showAlert('Wishlist Gagal Diperbarui', err instanceof Error ? err.message : String(err));
     }
   };
 

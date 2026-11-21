@@ -1,7 +1,7 @@
-import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { appMode, storage } from '../../config/firebase';
 import { ImageFolder, UploadedImage, uploadImage } from '../images/imageUpload';
+import { feedback } from '../../components/feedback';
 
 export { MAX_IMAGE_BYTES, ImageUploadError, isRemoteImageUrl } from '../images/imageUpload';
 export type { ImageFolder, UploadedImage } from '../images/imageUpload';
@@ -25,7 +25,7 @@ export class ImageService {
   static async pickImageFromGallery(): Promise<string | null> {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Izin Diperlukan', 'Izin akses galeri diperlukan untuk memilih foto.');
+      feedback.showAlert('Izin Diperlukan', 'Izin akses galeri diperlukan untuk memilih foto.');
       return null;
     }
     return fromResult(
@@ -36,7 +36,7 @@ export class ImageService {
   static async takePhotoWithCamera(): Promise<string | null> {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Izin Diperlukan', 'Izin kamera diperlukan untuk memotret.');
+      feedback.showAlert('Izin Diperlukan', 'Izin kamera diperlukan untuk memotret.');
       return null;
     }
     return fromResult(await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.8 }));

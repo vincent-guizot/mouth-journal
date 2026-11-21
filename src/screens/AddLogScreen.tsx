@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   Modal,
   TextInput,
@@ -28,6 +27,7 @@ import { ScreenEntrance } from '../components/ScreenEntrance';
 import { DecorativeAssets } from '../config/assets';
 import { ImageService } from '../services/firebase/imageService';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { feedback } from '../components/feedback';
 
 export interface AddLogScreenProps {
   initialPlace?: NearbyPlace | null;
@@ -94,7 +94,7 @@ export const AddLogScreen: React.FC<AddLogScreenProps> = ({
 
   const savePlace = () => {
     if (!placeNameInput.trim()) {
-      Alert.alert('Nama tempat diperlukan', 'Masukkan nama tempat sebelum melanjutkan.');
+      feedback.showAlert('Nama tempat diperlukan', 'Masukkan nama tempat sebelum melanjutkan.');
       return;
     }
     editPlaceManually(placeNameInput, placeAddressInput);
@@ -103,20 +103,20 @@ export const AddLogScreen: React.FC<AddLogScreenProps> = ({
 
   const handleDelete = () => {
     if (!onDelete) return;
-    Alert.alert('Hapus Jurnal', 'Jurnal ini akan dihapus secara permanen.', [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Hapus',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await onDelete();
-          } catch (error) {
-            Alert.alert('Gagal menghapus jurnal', error instanceof Error ? error.message : String(error));
-          }
-        },
+    feedback.showConfirm({
+      title: 'Hapus Jurnal',
+      message: 'Jurnal ini akan dihapus secara permanen.',
+      cancelText: 'Batal',
+      confirmText: 'Hapus',
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          await onDelete();
+        } catch (error) {
+          feedback.showAlert('Gagal menghapus jurnal', error instanceof Error ? error.message : String(error));
+        }
       },
-    ]);
+    });
   };
 
   const chooseFoodPhoto = async () => {
@@ -124,7 +124,7 @@ export const AddLogScreen: React.FC<AddLogScreenProps> = ({
       const uri = await ImageService.pickImageFromGallery();
       if (uri) setFoodPhotoUri(uri);
     } catch (err) {
-      Alert.alert('Gagal Memilih Foto', err instanceof Error ? err.message : String(err));
+      feedback.showAlert('Gagal Memilih Foto', err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -133,7 +133,7 @@ export const AddLogScreen: React.FC<AddLogScreenProps> = ({
     const digits = foodPrice.replace(/[^0-9]/g, '');
     const price = Number(digits);
     if (!name || digits === '' || !Number.isSafeInteger(price)) {
-      Alert.alert('Lengkapi menu', 'Masukkan nama makanan dan harganya (foto opsional).');
+      feedback.showAlert('Lengkapi menu', 'Masukkan nama makanan dan harganya (foto opsional).');
       return;
     }
     if (foodPhotoUri) addPhotoUri(foodPhotoUri);

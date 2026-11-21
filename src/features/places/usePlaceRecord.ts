@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
 import { Place } from '../../models/place';
 import { placesService } from '../../services/places/placesService';
 import { wishlistRepository } from '../../repositories';
+import { feedback } from '../../components/feedback';
 
 export type PlaceStatus = 'loading' | 'ready' | 'not_found' | 'invalid' | 'error';
 
@@ -67,12 +67,12 @@ export function usePlaceRecord(userId: string | undefined, placeId: string | nul
             photoUrl: place.photoUrl,
           });
       setIsWishlisted(!isWishlisted);
-      Alert.alert(
+      feedback.showAlert(
         'Wishlist',
         `"${place.name}" ${isWishlisted ? 'dihapus dari' : 'disimpan ke'} wishlist${sync === 'pending' ? ' (akan disinkronkan saat online)' : ''}.`
       );
     } catch (err) {
-      Alert.alert('Wishlist Gagal Diperbarui', err instanceof Error ? err.message : String(err));
+      feedback.showAlert('Wishlist Gagal Diperbarui', err instanceof Error ? err.message : String(err));
     }
   }, [userId, place, isWishlisted]);
 

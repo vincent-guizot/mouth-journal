@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
-import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { PendingChangesError } from '../../services/firebase/authService';
+import { feedback } from '../../components/feedback';
 
 /**
  * Logout that never silently drops unsynced journal/wishlist changes: if the
@@ -20,24 +20,24 @@ export function useLogout() {
       finish();
     } catch (err) {
       if (err instanceof PendingChangesError) {
-        Alert.alert('Perubahan Belum Tersinkron', `${err.message} Hubungkan internet lalu coba lagi, atau buang perubahan tersebut.`, [
-          { text: 'Batal', style: 'cancel' },
-          {
-            text: 'Buang & Keluar',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                await logout({ discardPending: true });
-                finish();
-              } catch (e) {
-                Alert.alert('Gagal Keluar', e instanceof Error ? e.message : String(e));
-              }
-            },
+        feedback.showConfirm({
+          title: 'Perubahan Belum Tersinkron',
+          message: `${err.message} Hubungkan internet lalu coba lagi, atau buang perubahan tersebut.`,
+          cancelText: 'Batal',
+          confirmText: 'Buang & Keluar',
+          destructive: true,
+          onConfirm: async () => {
+            try {
+              await logout({ discardPending: true });
+              finish();
+            } catch (e) {
+              feedback.showAlert('Gagal Keluar', e instanceof Error ? e.message : String(e));
+            }
           },
-        ]);
+        });
         return;
       }
-      Alert.alert('Gagal Keluar', err instanceof Error ? err.message : String(err));
+      feedback.showAlert('Gagal Keluar', err instanceof Error ? err.message : String(err));
     }
   }, [logout, router]);
 }

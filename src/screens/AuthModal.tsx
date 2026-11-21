@@ -9,14 +9,14 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import Svg, { Path, Circle, Rect, G } from 'react-native-svg';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { useAuth } from '../context/AuthContext';
 import { theme } from '../config/theme';
-import { DecorativeAssets, IllustrationAssets } from '../config/assets';
+import { IllustrationAssets } from '../config/assets';
+import { feedback } from '../components/feedback';
 import {
   Mail,
   Lock,
@@ -149,7 +149,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       await fn();
     } catch (err) {
-      Alert.alert(title, err instanceof Error ? err.message : String(err));
+      feedback.showAlert(title, err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
@@ -157,7 +157,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleLogin = () => {
     if (!email.trim() || !password) {
-      Alert.alert('Perhatian', 'Harap isi email dan password.');
+      feedback.showAlert('Perhatian', 'Harap isi email dan password.');
       return;
     }
     return run('Login Gagal', async () => {
@@ -168,15 +168,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleRegister = () => {
     if (!name.trim() || !email.trim() || !password) {
-      Alert.alert('Perhatian', 'Harap lengkapi semua kolom pendaftaran.');
+      feedback.showAlert('Perhatian', 'Harap lengkapi semua kolom pendaftaran.');
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Perhatian', 'Konfirmasi password tidak cocok.');
+      feedback.showAlert('Perhatian', 'Konfirmasi password tidak cocok.');
       return;
     }
     if (!agreeTerms) {
-      Alert.alert('Perhatian', 'Harap setujui syarat penggunaan.');
+      feedback.showAlert('Perhatian', 'Harap setujui syarat penggunaan.');
       return;
     }
     return run('Pendaftaran Gagal', async () => {
@@ -194,14 +194,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleForgotPasswordSubmit = () => {
     if (!email.trim()) {
-      Alert.alert('Perhatian', 'Harap masukkan alamat email.');
+      feedback.showAlert('Perhatian', 'Harap masukkan alamat email.');
       return;
     }
     return requestReset(() => setStep('link_sent'));
   };
 
   const handleResend = () =>
-    requestReset(() => Alert.alert('Email Terkirim', `Link reset baru dikirim ke ${email.trim()}.`));
+    requestReset(() => feedback.showAlert('Email Terkirim', `Link reset baru dikirim ke ${email.trim()}.`));
 
   return (
     <KeyboardAvoidingView

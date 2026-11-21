@@ -7,12 +7,12 @@ import {
   Image,
   TouchableOpacity,
   Share,
-  Alert,
   Modal,
 } from 'react-native';
 import { theme } from '../config/theme';
 import { DiaryEntry } from '../types/diary';
 import { PhotoViewerScreen } from './PhotoViewerScreen';
+import { feedback } from '../components/feedback';
 import {
   ArrowLeft,
   Share2,
@@ -73,7 +73,7 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
         message: `MouthJournal: Mengunjungi ${placeName} (${placeAddress}). Rating: ${overallRating} ⭐\n"${reviewText}"`,
       });
     } catch (err) {
-      Alert.alert('Gagal membagikan', err instanceof Error ? err.message : String(err));
+      feedback.showAlert('Gagal membagikan', err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -285,7 +285,7 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
                     style={styles.menuItemCard}
                     activeOpacity={0.85}
                     onPress={() =>
-                      Alert.alert(
+                      feedback.showAlert(
                         item.name,
                         itemDesc ? `${formattedPrice}\n\n${itemDesc}` : formattedPrice
                       )
@@ -454,7 +454,7 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
             <TouchableOpacity
               style={styles.metaSmallCard}
               onPress={() =>
-                Alert.alert(
+                feedback.showAlert(
                   'Info Jurnal',
                   `Dibuat: ${new Date(journal.createdAt).toLocaleString('id-ID')}` +
                     (journal.updatedAt ? `\nDiperbarui: ${new Date(journal.updatedAt).toLocaleString('id-ID')}` : '')

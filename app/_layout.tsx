@@ -16,6 +16,7 @@ import {
   Manrope_800ExtraBold,
 } from '@expo-google-fonts/manrope';
 import { AuthProvider } from '../src/context/AuthContext';
+import { FeedbackProvider } from '../src/components/feedback';
 import { theme } from '../src/config/theme';
 
 export default function RootLayout() {
@@ -40,58 +41,60 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <StatusBar style="dark" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: theme.colors.background },
-            animation: 'slide_from_right',
-          }}
-        >
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="journals/[journalId]"
-            options={{ presentation: 'card' }}
-          />
-          <Stack.Screen
-            name="journals/create"
-            options={{ presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="journals/[journalId]/edit"
-            options={{ presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="places/[placeId]"
-            options={{ presentation: 'card' }}
-          />
-          <Stack.Screen
-            name="places/search"
-            options={{ presentation: 'card' }}
-          />
-          <Stack.Screen
-            name="wishlist/[itemId]"
-            options={{ presentation: 'card' }}
-          />
-          <Stack.Screen
-            name="settings/index"
-            options={{ presentation: 'card' }}
-          />
-          <Stack.Screen
-            name="profile/edit"
-            options={{ presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="recommendations/index"
-            options={{ presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="notifications/index"
-            options={{ presentation: 'card' }}
-          />
-        </Stack>
+        <FeedbackProvider>
+          <StatusBar style="dark" />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: theme.colors.background },
+              animation: 'slide_from_right',
+            }}
+          >
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="journals/[journalId]"
+              options={{ presentation: 'card' }}
+            />
+            <Stack.Screen
+              name="journals/create"
+              options={{ presentation: 'modal' }}
+            />
+            <Stack.Screen
+              name="journals/[journalId]/edit"
+              options={{ presentation: 'modal' }}
+            />
+            <Stack.Screen
+              name="places/[placeId]"
+              options={{ presentation: 'card' }}
+            />
+            <Stack.Screen
+              name="places/search"
+              options={{ presentation: 'card' }}
+            />
+            <Stack.Screen
+              name="wishlist/[itemId]"
+              options={{ presentation: 'card' }}
+            />
+            <Stack.Screen
+              name="settings/index"
+              options={{ presentation: 'card' }}
+            />
+            <Stack.Screen
+              name="profile/edit"
+              options={{ presentation: 'modal' }}
+            />
+            <Stack.Screen
+              name="recommendations/index"
+              options={{ presentation: 'modal' }}
+            />
+            <Stack.Screen
+              name="notifications/index"
+              options={{ presentation: 'card' }}
+            />
+          </Stack>
+        </FeedbackProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

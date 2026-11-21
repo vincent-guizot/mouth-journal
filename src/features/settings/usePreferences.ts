@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
 import { AppSettings } from '../../models/preferences';
 import { PreferencesPatch } from '../../schemas/preferencesSchema';
 import { userPreferencesRepository } from '../../repositories';
+import { feedback } from '../../components/feedback';
 
 /** Typed settings state; every patch is merged by the repository in one write. */
 export function usePreferences(userId: string | undefined) {
@@ -27,9 +27,11 @@ export function usePreferences(userId: string | undefined) {
       try {
         const { data, sync } = await userPreferencesRepository.updatePreferences(userId, patch);
         setSettings(data);
-        if (sync === 'pending') Alert.alert('Disimpan di Perangkat', 'Preferensi akan disinkronkan saat online.');
+        if (sync === 'pending') {
+          feedback.showToast('Preferensi akan disinkronkan saat online.', 'info');
+        }
       } catch (err) {
-        Alert.alert('Gagal Menyimpan Preferensi', err instanceof Error ? err.message : String(err));
+        feedback.showAlert('Gagal Menyimpan Preferensi', err instanceof Error ? err.message : String(err));
       }
     },
     [userId]

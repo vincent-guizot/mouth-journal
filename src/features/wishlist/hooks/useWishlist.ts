@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 import { WishlistItem } from '../../../models/wishlist';
 import { UserLocation } from '../../../models/place';
 import { wishlistRepository } from '../../../repositories';
 import { calculateDistance } from '../../../utils/geo';
+import { feedback } from '../../../components/feedback';
 
 export type WishlistTab = 'tempat' | 'menu';
 export type WishlistSort = 'newest' | 'name_asc' | 'name_desc' | 'nearest';
@@ -51,22 +51,24 @@ export function useWishlist(userId: string, userLocation?: UserLocation) {
   );
 
   const handleToggleHeart = (item: WishlistItem) => {
-    Alert.alert('Wishlist', `Hapus "${item.placeName}" dari Wishlist?`, [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Hapus',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            const { sync } = await wishlistRepository.removeFromWishlist(userId, item.placeId);
-            setPlacesList((prev) => prev.filter((p) => p.placeId !== item.placeId));
-            if (sync === 'pending') Alert.alert('Wishlist', 'Dihapus di perangkat; akan disinkronkan saat online.');
-          } catch (err) {
-            Alert.alert('Gagal Menghapus', err instanceof Error ? err.message : String(err));
+    feedback.showConfirm({
+      title: 'Wishlist',
+      message: `Hapus "${item.placeName}" dari Wishlist?`,
+      cancelText: 'Batal',
+      confirmText: 'Hapus',
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          const { sync } = await wishlistRepository.removeFromWishlist(userId, item.placeId);
+          setPlacesList((prev) => prev.filter((p) => p.placeId !== item.placeId));
+          if (sync === 'pending') {
+            feedback.showToast('Dihapus di perangkat; akan disinkronkan saat online.', 'info');
           }
-        },
+        } catch (err) {
+          feedback.showAlert('Gagal Menghapus', err instanceof Error ? err.message : String(err));
+        }
       },
-    ]);
+    });
   };
 
   const filteredPlaces = useMemo(() => {

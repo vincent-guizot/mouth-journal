@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   Share,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -20,6 +19,7 @@ import {
 } from '../../src/repositories';
 import { theme } from '../../src/config/theme';
 import { buildExportArchive } from '../../src/features/settings/exportArchive';
+import { feedback } from '../../src/components/feedback';
 
 export default function DataSupportSettingsRoute() {
   const router = useRouter();
@@ -30,7 +30,7 @@ export default function DataSupportSettingsRoute() {
     if (!currentUser?.uid) return;
     const uid = currentUser.uid;
     if (appMode === 'demo') {
-      Alert.alert('Tidak Tersedia', 'Di mode demo, cache lokal adalah satu-satunya salinan data Anda dan tidak dapat dibersihkan dari sini.');
+      feedback.showAlert('Tidak Tersedia', 'Di mode demo, cache lokal adalah satu-satunya salinan data Anda dan tidak dapat dibersihkan dari sini.');
       return;
     }
     let pending = 0;
@@ -38,38 +38,34 @@ export default function DataSupportSettingsRoute() {
       const [j, w] = await Promise.all([journalRepository.getSyncState(uid), wishlistRepository.getSyncState(uid)]);
       pending = j.pending + j.failed.length + w.pending + w.failed.length;
     } catch (err) {
-      Alert.alert('Gagal', err instanceof Error ? err.message : String(err));
+      feedback.showAlert('Gagal', err instanceof Error ? err.message : String(err));
       return;
     }
-    Alert.alert(
-      'Bersihkan Cache',
-      pending > 0
+    feedback.showConfirm({
+      title: 'Bersihkan Cache',
+      message: pending > 0
         ? `PERINGATAN: ${pending} perubahan belum tersinkron ke cloud dan akan hilang permanen.`
         : 'Cache lokal perangkat ini akan dikosongkan. Data cloud tetap aman.',
-      [
-        { text: 'Batal', style: 'cancel' },
-        {
-          text: pending > 0 ? 'Buang & Bersihkan' : 'Bersihkan',
-          style: 'destructive',
-          onPress: async () => {
-            setIsClearing(true);
-            try {
-              await Promise.all([
-                journalRepository.clearUserCache(uid),
-                wishlistRepository.clearUserCache(uid),
-                userPreferencesRepository.clearUserCache(uid),
-                userProfileRepository.clearUserCache(uid),
-              ]);
-              Alert.alert('Sukses', 'Cache lokal berhasil dibersihkan.');
-            } catch (err) {
-              Alert.alert('Gagal', err instanceof Error ? err.message : String(err));
-            } finally {
-              setIsClearing(false);
-            }
-          },
-        },
-      ]
-    );
+      cancelText: 'Batal',
+      confirmText: pending > 0 ? 'Buang & Bersihkan' : 'Bersihkan',
+      destructive: true,
+      onConfirm: async () => {
+        setIsClearing(true);
+        try {
+          await Promise.all([
+            journalRepository.clearUserCache(uid),
+            wishlistRepository.clearUserCache(uid),
+            userPreferencesRepository.clearUserCache(uid),
+            userProfileRepository.clearUserCache(uid),
+          ]);
+          feedback.showToast('Cache lokal berhasil dibersihkan.', 'success');
+        } catch (err) {
+          feedback.showAlert('Gagal', err instanceof Error ? err.message : String(err));
+        } finally {
+          setIsClearing(false);
+        }
+      },
+    });
   };
 
   /** Real export: the full JSON archive is handed to the OS share sheet. */
@@ -84,31 +80,28 @@ export default function DataSupportSettingsRoute() {
       const archive = buildExportArchive(currentUser, journals, wishlist, settings);
       await Share.share({ title: 'MouthJournal export', message: JSON.stringify(archive, null, 2) });
     } catch (err) {
-      Alert.alert('Gagal Ekspor', err instanceof Error ? err.message : String(err));
+      feedback.showAlert('Gagal Ekspor', err instanceof Error ? err.message : String(err));
     }
   };
 
   const showHelpFAQ = () => {
-    Alert.alert(
+    feedback.showAlert(
       'Bantuan & FAQ',
-      '1. Bagaimana cara menambah jurnal baru?\nKetuk tombol (+) di bilah navigasi bawah.\n\n2. Apakah foto makanan saya publik?\nTidak. Jurnal disimpan di akun Firebase Anda dan hanya dapat dibaca oleh akun Anda (aturan keamanan Firestore).\n\n3. Bagaimana cara kerja pencarian kafe Explore?\nPeta mendeteksi tempat sekitar melalui OpenStreetMap tanpa melacak data pribadi Anda.',
-      [{ text: 'Mengerti' }]
+      '1. Bagaimana cara menambah jurnal baru?\nKetuk tombol (+) di bilah navigasi bawah.\n\n2. Apakah foto makanan saya publik?\nTidak. Jurnal disimpan di akun Firebase Anda dan hanya dapat dibaca oleh akun Anda (aturan keamanan Firestore).\n\n3. Bagaimana cara kerja pencarian kafe Explore?\nPeta mendeteksi tempat sekitar melalui OpenStreetMap tanpa melacak data pribadi Anda.'
     );
   };
 
   const showPrivacyPolicy = () => {
-    Alert.alert(
+    feedback.showAlert(
       'Kebijakan Privasi',
-      'MouthJournal adalah aplikasi personal-first. Kami tidak pernah menjual data kuliner Anda, tidak menyertakan pelacak iklan, dan tidak mempublikasikan catatan Anda ke feed publik.',
-      [{ text: 'Tutup' }]
+      'MouthJournal adalah aplikasi personal-first. Kami tidak pernah menjual data kuliner Anda, tidak menyertakan pelacak iklan, dan tidak mempublikasikan catatan Anda ke feed publik.'
     );
   };
 
   const showTerms = () => {
-    Alert.alert(
+    feedback.showAlert(
       'Syarat & Ketentuan',
-      'Seluruh konten jurnal, review rasa, dan foto yang Anda unggah adalah hak milik intelektual Anda sepenuhnya sebagai pencipta catatan.',
-      [{ text: 'Tutup' }]
+      'Seluruh konten jurnal, review rasa, dan foto yang Anda unggah adalah hak milik intelektual Anda sepenuhnya sebagai pencipta catatan.'
     );
   };
 

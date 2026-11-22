@@ -33,6 +33,12 @@ export default function ProfileTabRoute() {
         onOpenAIRecommendations={() => {
           router.push('/recommendations');
         }}
+        onOpenMemoryMap={() => {
+          router.push('/map/memory-map');
+        }}
+        onOpenAnalytics={() => {
+          router.push('/stats/digest');
+        }}
         onJournalSelect={(journal) => {
           router.push({
             pathname: '/journals/[journalId]',

@@ -9,6 +9,9 @@ export interface VisitedPlace {
   averageRating: number;
   lastVisited: string;
   photoUrl?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  mainCategory?: string;
 }
 
 export interface LoggedDish {
@@ -42,6 +45,9 @@ export function aggregateVisitedPlaces(journals: Journal[]): VisitedPlace[] {
       totalRating: number;
       lastVisited: string;
       photos: string[];
+      latitude: number | null;
+      longitude: number | null;
+      mainCategory: string;
     }
   >();
 
@@ -58,6 +64,9 @@ export function aggregateVisitedPlaces(journals: Journal[]): VisitedPlace[] {
         totalRating: j.overallRating,
         lastVisited: date,
         photos: [...j.photoUrls],
+        latitude: j.latitude,
+        longitude: j.longitude,
+        mainCategory: j.mainCategory,
       });
     } else {
       existing.visitCount += 1;
@@ -67,6 +76,10 @@ export function aggregateVisitedPlaces(journals: Journal[]): VisitedPlace[] {
       }
       if (j.photoUrls.length > 0) {
         existing.photos.push(...j.photoUrls);
+      }
+      if (!existing.latitude && j.latitude) {
+        existing.latitude = j.latitude;
+        existing.longitude = j.longitude;
       }
     }
   }
@@ -81,6 +94,9 @@ export function aggregateVisitedPlaces(journals: Journal[]): VisitedPlace[] {
       averageRating: Math.round((p.totalRating / p.visitCount) * 10) / 10,
       lastVisited: p.lastVisited,
       photoUrl: p.photos[0],
+      latitude: p.latitude,
+      longitude: p.longitude,
+      mainCategory: p.mainCategory,
     }))
     .sort((a, b) => b.lastVisited.localeCompare(a.lastVisited));
 }

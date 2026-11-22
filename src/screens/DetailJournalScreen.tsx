@@ -6,13 +6,13 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  Share,
   Modal,
 } from 'react-native';
 import { theme } from '../config/theme';
 import { DiaryEntry } from '../types/diary';
 import { PhotoViewerScreen } from './PhotoViewerScreen';
 import { feedback } from '../components/feedback';
+import { ShareStoryCardModal } from '../features/journal-share/components/ShareStoryCardModal';
 import {
   ArrowLeft,
   Share2,
@@ -51,6 +51,7 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
   const photos = journal.photoUrls;
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [isPhotoViewerOpen, setIsPhotoViewerOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const placeName = journal.placeName;
   const placeAddress = journal.placeAddress || 'Alamat tidak dicatat';
@@ -67,14 +68,8 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
   const menuItems = journal.menuItems;
   const tags = journal.tags;
 
-  const handleShare = async () => {
-    try {
-      await Share.share({
-        message: `MouthJournal: Mengunjungi ${placeName} (${placeAddress}). Rating: ${overallRating} ⭐\n"${reviewText}"`,
-      });
-    } catch (err) {
-      feedback.showAlert('Gagal membagikan', err instanceof Error ? err.message : String(err));
-    }
+  const handleShare = () => {
+    setIsShareModalOpen(true);
   };
 
 
@@ -497,6 +492,13 @@ export const DetailJournalScreen: React.FC<DetailJournalScreenProps> = ({
           }}
         />
       </Modal>
+
+      {/* Shareable Story Card Modal */}
+      <ShareStoryCardModal
+        visible={isShareModalOpen}
+        journal={journal}
+        onClose={() => setIsShareModalOpen(false)}
+      />
     </View>
   );
 };

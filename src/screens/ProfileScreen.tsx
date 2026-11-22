@@ -14,7 +14,7 @@ import { ProfileWishlistItem } from '../features/profile/components/ProfileWishl
 import { WishlistMenuCard } from '../features/wishlist/components/WishlistMenuCard';
 import { EmptyState } from '../components/feedback/EmptyState';
 import { DecorativeAssets } from '../config/assets';
-import { BookOpen, MapPin, Utensils, Heart, Sparkles, ChevronRight } from 'lucide-react-native';
+import { BookOpen, MapPin, Utensils, Heart, Sparkles, ChevronRight, Compass } from 'lucide-react-native';
 
 export interface ProfileScreenProps {
   user: UserProfile;
@@ -23,6 +23,8 @@ export interface ProfileScreenProps {
   onJournalSelect?: (journal: DiaryEntry) => void;
   onEditProfile?: () => void;
   onOpenAIRecommendations?: () => void;
+  onOpenMemoryMap?: () => void;
+  onOpenAnalytics?: () => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
@@ -31,6 +33,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onJournalSelect,
   onEditProfile,
   onOpenAIRecommendations,
+  onOpenMemoryMap,
+  onOpenAnalytics,
 }) => {
   const {
     activeTab,
@@ -81,7 +85,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       )}
 
       {/* 3. Culinary Statistics Bar */}
-      <ProfileStatsBar stats={stats} />
+      <ProfileStatsBar stats={stats} onPress={onOpenAnalytics} />
 
       {/* 4. Segmented Tabs */}
       <ProfileTabs
@@ -129,20 +133,40 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               subtitle="Tempat kuliner yang kamu beri ulasan akan otomatis terkumpul di sini."
             />
           ) : (
-            visitedPlaces.map((place) => {
-              const matchedJournal = userDiaries.find((d) => d.placeId === place.placeId);
-              return (
-                <ProfilePlaceItem
-                  key={place.placeId}
-                  place={place}
-                  onPress={
-                    matchedJournal && onJournalSelect
-                      ? () => onJournalSelect(matchedJournal)
-                      : undefined
-                  }
-                />
-              );
-            })
+            <>
+              {onOpenMemoryMap && (
+                <TouchableOpacity
+                  style={styles.mapBannerBtn}
+                  onPress={onOpenMemoryMap}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.mapBannerIcon}>
+                    <Compass size={18} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.mapBannerTextCol}>
+                    <Text style={styles.mapBannerTitle}>Buka Peta Jejak Kuliner</Text>
+                    <Text style={styles.mapBannerSubtitle}>
+                      Lihat sebaran {visitedPlaces.length} tempat di peta interaktif
+                    </Text>
+                  </View>
+                  <ChevronRight size={18} color="#D04A1E" />
+                </TouchableOpacity>
+              )}
+              {visitedPlaces.map((place) => {
+                const matchedJournal = userDiaries.find((d) => d.placeId === place.placeId);
+                return (
+                  <ProfilePlaceItem
+                    key={place.placeId}
+                    place={place}
+                    onPress={
+                      matchedJournal && onJournalSelect
+                        ? () => onJournalSelect(matchedJournal)
+                        : undefined
+                    }
+                  />
+                );
+              })}
+            </>
           )
         ) : activeTab === 'menu' ? (
           dishes.length === 0 ? (
@@ -229,6 +253,38 @@ const styles = StyleSheet.create({
     color: '#3D2C1E',
   },
   aiBannerSubtitle: {
+    fontSize: 11,
+    color: '#8A7A6D',
+    marginTop: 1,
+  },
+  mapBannerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FAF5EE',
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#EFE3D3',
+    gap: 10,
+  },
+  mapBannerIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#D04A1E',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapBannerTextCol: {
+    flex: 1,
+  },
+  mapBannerTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#3D2C1E',
+  },
+  mapBannerSubtitle: {
     fontSize: 11,
     color: '#8A7A6D',
     marginTop: 1,
